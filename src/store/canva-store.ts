@@ -747,8 +747,8 @@ export const useCanvaStore = create<CanvaState>((set, get) => ({
   // ── Persistence ──────────────────────────────────────────────
   saveToStorage: () => {
     try {
-      const { pages, ratioId } = get();
-      localStorage.setItem(CANVA_STORAGE_KEY, JSON.stringify({ pages, ratioId }));
+      const { pages, ratioId, rightPanelOpen } = get();
+      localStorage.setItem(CANVA_STORAGE_KEY, JSON.stringify({ pages, ratioId, rightPanelOpen }));
     } catch {
       // Storage full or unavailable
     }
@@ -779,7 +779,7 @@ export const useCanvaStore = create<CanvaState>((set, get) => ({
           ratioId: data.ratioId || '16:9',
           currentPageIndex: 0,
           selectedElId: null,
-          rightPanelOpen: true,
+          rightPanelOpen: data.rightPanelOpen !== undefined ? data.rightPanelOpen : true,
         });
         return true;
       }

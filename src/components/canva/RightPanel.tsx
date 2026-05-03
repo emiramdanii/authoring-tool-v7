@@ -21,6 +21,7 @@ export default function RightPanel() {
     setTemplateType,
     updateTemplateData,
     rightPanelOpen,
+    toggleRightPanel,
   } = useCanvaStore();
 
   const page = pages[currentPageIndex];
@@ -43,7 +44,28 @@ export default function RightPanel() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (key: string) => setCollapsed(p => ({ ...p, [key]: !p[key] }));
 
-  if (!rightPanelOpen) return null;
+  if (!rightPanelOpen) {
+    // Show a thin collapsed bar with reopen button instead of returning null
+    return (
+      <div className="w-8 min-w-[32px] flex flex-col items-center py-3 bg-zinc-900/80 border-l border-zinc-700/50 gap-2">
+        <button
+          onClick={toggleRightPanel}
+          className="w-6 h-6 flex items-center justify-center rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 hover:bg-amber-500/25 transition-colors text-[10px] font-bold"
+          title="Tampilkan Panel Kanan"
+        >
+          ▸
+        </button>
+        <div className="w-4 h-px bg-zinc-700" />
+        <button
+          onClick={toggleRightPanel}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200 transition-colors text-xs"
+          title="Tampilkan Panel Kanan"
+        >
+          ☰
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-56 min-w-[224px] flex flex-col bg-zinc-900/60 border-l border-zinc-700/50 overflow-y-auto custom-scrollbar">
