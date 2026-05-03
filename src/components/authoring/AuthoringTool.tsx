@@ -1,9 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuthoringStore } from '@/store/authoring-store';
 import type { PanelId } from '@/store/authoring-store';
+
+// ── Error Boundary for dynamic chunks ────────────────────────────
+type EBProps = { children: React.ReactNode; fallback?: React.ReactNode };
+type EBState = { hasError: boolean; error: Error | null };
+
+class DynamicErrorBoundary extends Component<EBProps, EBState> {
+  state: EBState = { hasError: false, error: null };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="h-full w-full flex items-center justify-center bg-zinc-950">
+          <div className="text-center max-w-md px-6">
+            <div className="text-4xl mb-4">⚠️</div>
+            <div className="text-zinc-200 font-semibold mb-2">Gagal memuat komponen</div>
+            <div className="text-zinc-400 text-sm mb-4">{this.state.error?.message || 'ChunkLoadError'}</div>
+            <button
+              onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold rounded-lg transition-colors"
+            >
+              Muat Ulang Halaman
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 import Dashboard from './Dashboard';
 import Dokumen from './Dokumen';
@@ -141,7 +170,7 @@ export default function AuthoringTool() {
       case 'dashboard': return <Dashboard />;
       case 'dokumen': return <Dokumen />;
       case 'konten': return <Konten />;
-      case 'canva': return <CanvaBuilder />;
+      case 'canva': return <DynamicErrorBoundary><CanvaBuilder /></DynamicErrorBoundary>;
       case 'autogen': return <AutoGenerate />;
       case 'projects': return <Projects />;
       case 'import': return <ImportExport />;
