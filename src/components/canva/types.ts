@@ -42,15 +42,27 @@ export interface CanvaElement {
 // ── Template System Types ─────────────────────────────────────
 
 export type PageTemplateType =
-  | 'cover'      // Cover / judul halaman
-  | 'dokumen'    // CP / TP / ATP display
-  | 'materi'     // Materi pembelajaran
-  | 'kuis'       // Kuis interaktif
-  | 'game'       // Game interaktif (sub-type from modules)
-  | 'hasil'      // Hasil / apresiasi
-  | 'hero'       // Hero banner
-  | 'skenario'   // Skenario interaktif
-  | 'custom';    // Blank canvas (legacy element mode)
+  | 'cover'            // Cover / judul halaman
+  | 'dokumen'          // CP / TP / ATP display
+  | 'tujuan'           // Tujuan Pembelajaran
+  | 'review'           // Review / recall
+  | 'materi-tabicons'  // Materi dengan tab icons
+  | 'materi-accordion' // Materi dengan accordion
+  | 'diskusi-timer'    // Diskusi + timer
+  | 'sortir-game'      // Game sortir/kategorisasi
+  | 'roda-game'        // Game roda putar
+  | 'hubungan-konsep'  // Peta konsep / hubungan
+  | 'flashcard'        // Flashcard deck
+  | 'hasil'            // Hasil / apresiasi
+  | 'refleksi'         // Refleksi pembelajaran
+  | 'penutup'          // Penutup / closing
+  | 'kuis'             // Kuis interaktif
+  | 'skenario'         // Skenario interaktif
+  // Legacy types (still supported for existing pages)
+  | 'materi'           // Materi (legacy)
+  | 'game'             // Game (legacy)
+  | 'hero'             // Hero banner (legacy)
+  | 'custom';          // Blank canvas (legacy element mode)
 
 export interface ColorPalette {
   colors: string[];             // Extracted hex colors (up to 8)
@@ -124,15 +136,31 @@ export interface TemplateInfo {
 }
 
 export const TEMPLATE_TYPES: TemplateInfo[] = [
-  { id: 'cover',    icon: '🏠', name: 'Cover',       desc: 'Halaman judul & pembuka',     color: '#f9c82e', category: 'utama' },
-  { id: 'dokumen',  icon: '📋', name: 'Dokumen',     desc: 'CP, TP, ATP',                color: '#3ecfcf', category: 'utama' },
-  { id: 'hero',     icon: '🚀', name: 'Hero',        desc: 'Banner dengan gradient',      color: '#fb923c', category: 'konten' },
-  { id: 'materi',   icon: '📝', name: 'Materi',      desc: 'Konten pembelajaran',         color: '#a78bfa', category: 'konten' },
-  { id: 'skenario', icon: '🎭', name: 'Skenario',    desc: 'Cerita interaktif pilihan',   color: '#f472b6', category: 'interaktif' },
-  { id: 'kuis',     icon: '❓', name: 'Kuis',        desc: 'Soal pilihan ganda',          color: '#f5c842', category: 'interaktif' },
-  { id: 'game',     icon: '🎮', name: 'Game',        desc: 'Game interaktif',             color: '#3ecfcf', category: 'interaktif' },
-  { id: 'hasil',    icon: '🏆', name: 'Hasil',       desc: 'Skor & apresiasi',            color: '#34d399', category: 'penutup' },
-  { id: 'custom',   icon: '⬜', name: 'Kosong',      desc: 'Canvas kosong (bebas)',       color: '#6366f1', category: 'utama' },
+  // ── Utama ──
+  { id: 'cover',            icon: '🏠', name: 'Cover',                 desc: 'Halaman judul & pembuka',       color: '#f9c82e', category: 'utama' },
+  { id: 'dokumen',          icon: '📋', name: 'Dokumen (CP/TP/ATP)',   desc: 'Capaian & Tujuan Pembelajaran', color: '#3ecfcf', category: 'utama' },
+  { id: 'tujuan',           icon: '🎯', name: 'Tujuan Pembelajaran',   desc: 'TP fokus pertemuan ini',        color: '#f5c842', category: 'utama' },
+  // ── Konten ──
+  { id: 'review',           icon: '🔄', name: 'Review',                desc: 'Tanya-jawab pemantik',          color: '#fb923c', category: 'konten' },
+  { id: 'materi-tabicons',  icon: '📑', name: 'Materi (Tab Icons)',    desc: 'Konten dengan tab navigasi',    color: '#a78bfa', category: 'konten' },
+  { id: 'materi-accordion', icon: '📂', name: 'Materi (Accordion)',    desc: 'Konten dengan lipat buka',      color: '#8b5cf6', category: 'konten' },
+  { id: 'hubungan-konsep',  icon: '🕸️', name: 'Hubungan Konsep',       desc: 'Peta konsep & relasi',          color: '#6366f1', category: 'konten' },
+  // ── Interaktif ──
+  { id: 'diskusi-timer',    icon: '⏱️', name: 'Diskusi + Timer',       desc: 'Diskusi terpandu + hitung waktu', color: '#06b6d4', category: 'interaktif' },
+  { id: 'sortir-game',      icon: '🔢', name: 'Game Sortir',           desc: 'Kategorikan item ke kelompok',  color: '#f97316', category: 'interaktif' },
+  { id: 'roda-game',        icon: '🎡', name: 'Game Roda',             desc: 'Roda putar pertanyaan',         color: '#ec4899', category: 'interaktif' },
+  { id: 'flashcard',        icon: '🃏', name: 'Flashcard',             desc: 'Kartu balik hafalan',           color: '#14b8a6', category: 'interaktif' },
+  { id: 'kuis',             icon: '❓', name: 'Kuis',                  desc: 'Soal pilihan ganda',            color: '#f5c842', category: 'interaktif' },
+  { id: 'skenario',         icon: '🎭', name: 'Skenario',              desc: 'Cerita interaktif pilihan',     color: '#f472b6', category: 'interaktif' },
+  // ── Penutup ──
+  { id: 'hasil',            icon: '🏆', name: 'Hasil',                 desc: 'Skor & apresiasi',              color: '#34d399', category: 'penutup' },
+  { id: 'refleksi',         icon: '💭', name: 'Refleksi',              desc: 'Refleksi pembelajaran',         color: '#818cf8', category: 'penutup' },
+  { id: 'penutup',          icon: '👋', name: 'Penutup',               desc: 'Penutup & rangkuman',           color: '#f472b6', category: 'penutup' },
+  // ── Legacy ──
+  { id: 'materi',           icon: '📝', name: 'Materi (Legacy)',       desc: 'Konten pembelajaran (lama)',    color: '#a78bfa', category: 'konten' },
+  { id: 'game',             icon: '🎮', name: 'Game (Legacy)',         desc: 'Game interaktif (lama)',        color: '#3ecfcf', category: 'interaktif' },
+  { id: 'hero',             icon: '🚀', name: 'Hero (Legacy)',         desc: 'Banner dengan gradient (lama)', color: '#fb923c', category: 'konten' },
+  { id: 'custom',           icon: '⬜', name: 'Kosong',                desc: 'Canvas kosong (bebas)',         color: '#6366f1', category: 'utama' },
 ];
 
 // ── Gradient Presets ──────────────────────────────────────────
