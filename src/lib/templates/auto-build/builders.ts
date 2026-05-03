@@ -31,12 +31,15 @@ import {
 // COVER
 // ═══════════════════════════════════════════════════════════════
 
-export function buildCoverSlotData(meta: MetaState, accentVar: string, pertemuanKe: number): ScreenSlotData {
+export function buildCoverSlotData(meta: MetaState, accentVar: string, pertemuanKe: number, cp?: CpState): ScreenSlotData {
   const chips: Array<{icon: string; label: string}> = [];
   if (meta.kelas) chips.push({ icon: '🏫', label: meta.kelas });
   if (meta.mapel) chips.push({ icon: '📚', label: meta.mapel });
   if (meta.durasi) chips.push({ icon: '⏱️', label: `${meta.durasi} Menit` });
   if (meta.kurikulum) chips.push({ icon: '🎯', label: `Fase ${meta.kurikulum}` });
+  // FIX: Add elemen chip from CP data when available
+  const elemenValue = cp?.elemen || '';
+  if (elemenValue) chips.push({ icon: '📐', label: elemenValue });
 
   return {
     _templateId: 'cover',
@@ -49,6 +52,7 @@ export function buildCoverSlotData(meta: MetaState, accentVar: string, pertemuan
     bab: meta.namaBab || '',
     durasi: meta.durasi || '',
     fase: meta.kurikulum || '',
+    elemen: elemenValue,
     chips: chips.length > 0 ? chips : undefined,
     ctaText: 'Mulai Pembelajaran',
     accentVar,
@@ -203,11 +207,36 @@ export function buildMateriTabIconsSlotData(
   contentAnalysis: ContentAnalysis,
   accentVar: string,
 ): ScreenSlotData {
-  const tabs = materi.blok.map((b) => ({
-    icon: b.icon || '📌',
-    label: b.judul || 'Bagian',
-    content: b.isi || b.butir?.join('\n') || '',
-  }));
+  // FIX: Build richer tabs with per-tab sub-components from blok data
+  const tabs = materi.blok.map((b) => {
+    const tabDefBoxes: DefBoxItem[] = [];
+    const tabCardGrid: CardGridItem[] = [];
+
+    // Create def-box from definisi/highlight/infobox bloks
+    if (b.tipe === 'definisi' && b.isi) {
+      tabDefBoxes.push({ text: `${b.judul ? b.judul + ': ' : ''}${b.isi}`, accentVar: '--y' });
+    } else if (b.tipe === 'highlight' && b.isi) {
+      tabDefBoxes.push({ text: b.isi, accentVar: '--c' });
+    } else if (b.tipe === 'infobox' && b.isi) {
+      tabDefBoxes.push({ text: `${b.judul ? b.judul + ': ' : ''}${b.isi}`, accentVar: '--p' });
+    }
+
+    // Create card grid from compare bloks
+    if (b.tipe === 'compare' && b.kiri && b.kanan) {
+      tabCardGrid.push(
+        { icon: b.kiri.icon || '⬅️', title: b.kiri.judul || 'Kiri', body: b.kiri.isi || '', accentVar: '--c' },
+        { icon: b.kanan.icon || '➡️', title: b.kanan.judul || 'Kanan', body: b.kanan.isi || '', accentVar: '--p' },
+      );
+    }
+
+    return {
+      icon: b.icon || '📌',
+      label: b.judul || 'Bagian',
+      content: b.isi || b.butir?.join('\n') || '',
+      defBoxes: tabDefBoxes.length > 0 ? tabDefBoxes : undefined,
+      cardGrid: tabCardGrid.length > 0 ? tabCardGrid : undefined,
+    };
+  });
 
   const diskusiKelompok = buildDiskusiKelompokBanner(
     accentVar,
@@ -245,6 +274,7 @@ export function buildMateriAccordionSlotData(
   accentVar: string,
 ): ScreenSlotData {
   // FIX: Build sections with enriched data — titleHighlight & steps from butir
+  // FIX: Build richer sections with per-section sub-components
   const sections = materi.blok.map((b) => {
     const section: Record<string, unknown> = {
       icon: b.icon || '📌',
@@ -258,6 +288,33 @@ export function buildMateriAccordionSlotData(
         emoji: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'][i] || '📌',
         text: point,
       }));
+    }
+
+    // FIX: Add per-section defBoxes from definisi/highlight/infobox bloks
+    const secDefBoxes: DefBoxItem[] = [];
+    if (b.tipe === 'definisi' && b.isi) {
+      secDefBoxes.push({ text: `${b.judul ? b.judul + ': ' : ''}${b.isi}`, accentVar: '--y' });
+    } else if (b.tipe === 'highlight' && b.isi) {
+      secDefBoxes.push({ text: b.isi, accentVar: '--c' });
+    } else if (b.tipe === 'infobox' && b.isi) {
+      secDefBoxes.push({ text: `${b.judul ? b.judul + ': ' : ''}${b.isi}`, accentVar: '--p' });
+    }
+    if (secDefBoxes.length > 0) section.defBoxes = secDefBoxes;
+
+    // FIX: Add per-section cardGrid from compare bloks
+    const secCardGrid: CardGridItem[] = [];
+    if (b.tipe === 'compare' && b.kiri && b.kanan) {
+      secCardGrid.push(
+        { icon: b.kiri.icon || '⬅️', title: b.kiri.judul || 'Kiri', body: b.kiri.isi || '', accentVar: '--c' },
+        { icon: b.kanan.icon || '➡️', title: b.kanan.judul || 'Kanan', body: b.kanan.isi || '', accentVar: '--p' },
+      );
+    }
+    if (secCardGrid.length > 0) section.cardGrid = secCardGrid;
+
+    // FIX: Add titleHighlight from warna/style field
+    if (b.warna || b.tipe === 'highlight') {
+      // Use isi prefix as highlight if subjudul not available
+      section.titleHighlight = b.isi ? b.isi.slice(0, 40) : '';
     }
 
     return section;
@@ -580,10 +637,14 @@ export function buildHotspotSlotData(
 // KUIS
 // ═══════════════════════════════════════════════════════════════
 
-export function buildKuisSlotData(kuis: KuisItem[], _accentVar: string): ScreenSlotData {
+export function buildKuisSlotData(kuis: KuisItem[], _accentVar: string, meta?: MetaState): ScreenSlotData {
+  // FIX: Use context-aware title
+  const title = meta?.judulPertemuan
+    ? `Kuis: ${meta.judulPertemuan}`
+    : 'Kuis Pengetahuan';
   return {
     _templateId: 'kuis',
-    title: 'Kuis Pengetahuan',
+    title,
     kuis: kuis
       .filter((k) => k.q.trim())
       .map((k) => ({
@@ -671,12 +732,14 @@ export function buildDiskusiTimerSlotData(
   atp: AtpState,
   meta: MetaState,
   accentVar: string,
+  materi?: MateriState,
 ): ScreenSlotData {
   const questions: string[] = [];
   atp.pertemuan.forEach((p) => {
     if (
       p.kegiatan.toLowerCase().includes('diskusi') ||
-      p.kegiatan.toLowerCase().includes('kelompok')
+      p.kegiatan.toLowerCase().includes('kelompok') ||
+      p.kegiatan.toLowerCase().includes('berdiskusi')
     ) {
       const sentences = p.kegiatan.split(/[.!?]+/).filter((s) => s.trim());
       sentences.forEach((s) => {
@@ -690,6 +753,31 @@ export function buildDiskusiTimerSlotData(
       }
     }
   });
+
+  // FIX: Add defBoxes from materi if available
+  const defBoxes: DefBoxItem[] = [];
+  if (materi) {
+    for (const blok of materi.blok) {
+      if (blok.tipe === 'definisi' && blok.isi) {
+        defBoxes.push({ text: `${blok.judul ? blok.judul + ': ' : ''}${blok.isi}`, accentVar: '--y' });
+      } else if (blok.tipe === 'kutipan' && blok.isi) {
+        defBoxes.push({ text: `"${blok.isi}"${blok.judul ? ' — ' + blok.judul : ''}`, accentVar: '--p' });
+      }
+    }
+  }
+
+  // FIX: Add cardGrid from materi compare bloks
+  const cardGrid: CardGridItem[] = [];
+  if (materi) {
+    for (const blok of materi.blok) {
+      if (blok.tipe === 'compare' && blok.kiri && blok.kanan) {
+        cardGrid.push(
+          { icon: blok.kiri.icon || '⬅️', title: blok.kiri.judul || 'Kiri', body: (blok.kiri.isi || '').slice(0, 120), accentVar: '--c' },
+          { icon: blok.kanan.icon || '➡️', title: blok.kanan.judul || 'Kanan', body: (blok.kanan.isi || '').slice(0, 120), accentVar: '--p' },
+        );
+      }
+    }
+  }
 
   const diskusiKelompok = buildDiskusiKelompokBanner(
     accentVar,
@@ -712,6 +800,8 @@ export function buildDiskusiTimerSlotData(
     duration: 10,
     questions: questions.length > 0 ? questions : ['Apa yang kamu ketahui tentang topik ini?'],
     diskusiKelompok,
+    defBoxes: defBoxes.length > 0 ? defBoxes : undefined,
+    cardGrid: cardGrid.length > 0 ? cardGrid : undefined,
     diskusiBox,
   };
 }
@@ -740,9 +830,55 @@ export function buildRefleksiSlotData(
   accentVar: string,
   meta: MetaState,
   materi: MateriState,
+  modules?: Array<Record<string, unknown>>,
 ): ScreenSlotData {
   // FIX: Generate context-aware reflection prompts from actual materi content
   const materiTitle = materi.blok[0]?.judul || meta.judulPertemuan || 'pembelajaran hari ini';
+
+  // FIX: Build flashcard ringkasan from materi definitions
+  const flashcardRingkasan: Array<{front: string; back: string; icon: string}> = [];
+  for (const blok of materi.blok) {
+    if (blok.tipe === 'definisi' && blok.isi) {
+      flashcardRingkasan.push({
+        front: blok.judul || 'Apa ini?',
+        back: blok.isi.slice(0, 200),
+        icon: blok.icon || '📌',
+      });
+    } else if (blok.tipe === 'highlight' && blok.isi) {
+      flashcardRingkasan.push({
+        front: blok.judul || 'Poin penting',
+        back: blok.isi.slice(0, 200),
+        icon: blok.icon || '✨',
+      });
+    }
+  }
+  // Also add flashcard module data if available
+  if (modules) {
+    const flashMods = getModulesOfType(modules, ['flashcard']);
+    for (const m of flashMods) {
+      const kartu = (m.kartu as Array<Record<string, unknown>>) || [];
+      for (const k of kartu) {
+        flashcardRingkasan.push({
+          front: (k.depan as string) || '',
+          back: (k.belakang as string) || '',
+          icon: (k.icon as string) || '🃏',
+        });
+      }
+    }
+  }
+
+  // FIX: Build portofolio items from materi discussions
+  const portofolio: Array<{id: string; label: string; value: string}> = [];
+  let portoIdx = 0;
+  for (const blok of materi.blok) {
+    if (blok.tipe === 'kutipan' && blok.isi) {
+      portofolio.push({
+        id: `porto-${portoIdx++}`,
+        label: blok.judul || 'Kutipan',
+        value: blok.isi,
+      });
+    }
+  }
 
   return {
     _templateId: 'refleksi',
@@ -761,6 +897,8 @@ export function buildRefleksiSlotData(
         placeholder: 'Tuliskan rencana aksi nyata…',
       },
     ],
+    portofolio: portofolio.length > 0 ? portofolio : undefined,
+    flashcardRingkasan: flashcardRingkasan.length > 0 ? flashcardRingkasan : undefined,
     useLocalStorage: true,
   };
 }
@@ -774,6 +912,8 @@ export function buildPenutupSlotData(
   atp: AtpState,
   accentVar: string,
   pertemuanKe: number | undefined,
+  kuis?: KuisItem[],
+  modules?: Array<Record<string, unknown>>,
 ): ScreenSlotData {
   let nextPreview: import('../engine/slot-types').PenutupNextPreview | undefined = undefined;
   if (pertemuanKe && atp.pertemuan.length > pertemuanKe) {
@@ -791,6 +931,7 @@ export function buildPenutupSlotData(
         return {
           icon: icons[i % icons.length],
           label: topic,
+          desc: '',
           accentVar: accentVars[i % accentVars.length],
         };
       });
@@ -814,6 +955,38 @@ export function buildPenutupSlotData(
     }
   }
 
+  // FIX: Dynamic stats based on actual content
+  const stats: Array<{icon: string; label: string; desc: string; bg: string; border: string}> = [];
+  stats.push({ icon: '📚', label: 'Materi', desc: 'Selesai dipelajari', bg: 'rgba(249,193,46,.06)', border: 'rgba(249,193,46,.2)' });
+
+  const hasDiskusi = atp.pertemuan.some(p =>
+    p.kegiatan.toLowerCase().includes('diskusi') ||
+    p.kegiatan.toLowerCase().includes('kelompok'),
+  );
+  if (hasDiskusi) {
+    stats.push({ icon: '💬', label: 'Diskusi', desc: 'Telah dikerjakan', bg: 'rgba(62,207,207,.06)', border: 'rgba(62,207,207,.2)' });
+  }
+
+  const hasSkenario = modules && getModulesOfType(modules, ['skenario']).length > 0;
+  if (hasSkenario) {
+    stats.push({ icon: '🎭', label: 'Skenario', desc: 'Telah dieksplorasi', bg: 'rgba(251,146,60,.06)', border: 'rgba(251,146,60,.2)' });
+  }
+
+  const hasGame = modules && getModulesOfType(modules, ['sorting', 'roda', 'spinwheel']).length > 0;
+  if (hasGame) {
+    stats.push({ icon: '🎮', label: 'Game', desc: 'Telah dimainkan', bg: 'rgba(167,139,250,.06)', border: 'rgba(167,139,250,.2)' });
+  }
+
+  const hasKuisData = kuis && kuis.filter(k => k.q.trim()).length > 0;
+  if (hasKuisData) {
+    stats.push({ icon: '❓', label: 'Kuis', desc: 'Telah dijawab', bg: 'rgba(255,107,107,.06)', border: 'rgba(255,107,107,.2)' });
+  }
+
+  // Ensure at least 3 stats for visual balance
+  if (stats.length < 3) {
+    stats.push({ icon: '🏆', label: 'Poin', desc: 'Dikumpulkan', bg: 'rgba(52,211,153,.06)', border: 'rgba(52,211,153,.2)' });
+  }
+
   return {
     _templateId: 'penutup',
     title: 'Pembelajaran Selesai!',
@@ -822,11 +995,7 @@ export function buildPenutupSlotData(
     message: `Selamat! Kamu telah menyelesaikan pembelajaran ${meta.namaBab || 'hari ini'}. Terus semangat belajar!`,
     nextAction: '',
     quote: 'Belajar bukan hanya soal nilai, tapi soal membangun pemahaman yang bermakna.',
-    stats: [
-      { icon: '📚', label: 'Materi', desc: 'Selesai dipelajari', bg: 'rgba(249,193,46,.06)', border: 'rgba(249,193,46,.2)' },
-      { icon: '💬', label: 'Diskusi', desc: 'Telah dikerjakan', bg: 'rgba(62,207,207,.06)', border: 'rgba(62,207,207,.2)' },
-      { icon: '❓', label: 'Kuis', desc: 'Telah dijawab', bg: 'rgba(167,139,250,.06)', border: 'rgba(167,139,250,.2)' },
-    ],
+    stats,
     nextPreview,
   };
 }
@@ -835,18 +1004,114 @@ export function buildPenutupSlotData(
 // PETUNJUK
 // ═══════════════════════════════════════════════════════════════
 
-export function buildPetunjukSlotData(meta: MetaState, _atp: AtpState): ScreenSlotData {
+export function buildPetunjukSlotData(
+  meta: MetaState,
+  atp: AtpState,
+  kuis?: KuisItem[],
+  modules?: Array<Record<string, unknown>>,
+  materi?: MateriState,
+): ScreenSlotData {
+  // FIX: Content-aware petunjuk — only mention activities that actually exist
+  const hasKuis = kuis && kuis.filter((k) => k.q.trim()).length > 0;
+  const hasGame = modules && (
+    getModulesOfType(modules, ['sorting', 'roda', 'spinwheel']).length > 0
+  );
+  const hasSkenario = modules && (
+    getModulesOfType(modules, ['skenario']).length > 0
+  );
+  const hasDiskusi = atp.pertemuan.some(
+    (p) =>
+      p.kegiatan.toLowerCase().includes('diskusi') ||
+      p.kegiatan.toLowerCase().includes('kelompok') ||
+      p.kegiatan.toLowerCase().includes('berdiskusi'),
+  );
+  const hasHotspot = modules && getModulesOfType(modules, ['hotspot-image']).length > 0;
+  const hasFlashcard = modules && getModulesOfType(modules, ['flashcard']).length > 0;
+
+  const items: Array<{icon: string; title: string; body: string}> = [];
+
+  // Always have reading/exploring as first item
+  items.push({
+    icon: '📖',
+    title: 'Baca & Eksplorasi',
+    body: 'Pelajari setiap halaman dengan saksama. Buka semua bagian materi dan baca definisi penting.',
+  });
+
+  // Diskusi — only if discussion activities exist
+  if (hasDiskusi) {
+    items.push({
+      icon: '💬',
+      title: 'Diskusi & Tulis',
+      body: 'Jawab pertanyaan diskusi — jawabanmu otomatis tersimpan dan akan muncul lagi di Refleksi sebagai portofolio.',
+    });
+  }
+
+  // Skenario — only if skenario exists
+  if (hasSkenario) {
+    items.push({
+      icon: '🎭',
+      title: 'Skenario Interaktif',
+      body: 'Ikuti cerita skenario dan pilih tindakanmu. Setiap pilihan punya konsekuensi — pilih dengan bijak!',
+    });
+  }
+
+  // Hotspot — only if hotspot images exist
+  if (hasHotspot) {
+    items.push({
+      icon: '🗺️',
+      title: 'Jelajahi Gambar',
+    body: 'Ketuk titik-titik pada gambar untuk menemukan informasi tersembunyi dan penjelasan mendalam.',
+    });
+  }
+
+  // Flashcard — only if flashcards exist
+  if (hasFlashcard) {
+    items.push({
+      icon: '🃏',
+      title: 'Kartu Belajar',
+      body: 'Balik kartu untuk melihat jawaban. Ulangi sampai kamu hafal semua konsep penting!',
+    });
+  }
+
+  // Game — only if game modules exist
+  if (hasGame) {
+    items.push({
+      icon: '🎮',
+      title: 'Game Interaktif',
+      body: 'Uji pemahamanmu dengan game seru. Setiap jawaban benar memberi poin dan penjelasan!',
+    });
+  }
+
+  // Kuis — only if kuis data exists
+  if (hasKuis) {
+    items.push({
+      icon: '❓',
+      title: 'Kuis Pengetahuan',
+      body: 'Jawab soal kuis di akhir materi. Setiap jawaban benar +10 poin dan ada penjelasannya!',
+    });
+  }
+
+  // Refleksi — always last
+  items.push({
+    icon: '📝',
+    title: 'Refleksi',
+    body: 'Tuliskan refleksimu di akhir pembelajaran. Jawaban akan jadi portofoliomu hari ini.',
+  });
+
+  // Build dynamic tips based on what exists
+  const tipsParts: string[] = ['Ikuti alur dari awal sampai akhir'];
+  if (hasDiskusi) tipsParts.push('jawab semua pertanyaan diskusi');
+  if (hasGame) tipsParts.push('selesaikan semua game');
+  if (hasKuis) tipsParts.push('jawab kuis dengan teliti');
+  tipsParts.push('jawabanmu akan tersimpan sebagai portofolio');
+  const tips = tipsParts.join(', ') + '!';
+
   return {
     _templateId: 'petunjuk',
     title: 'Cara Menggunakan',
     titleHighlight: 'Media Ini',
-    items: [
-      { icon: '📖', title: 'Baca & Eksplorasi', body: 'Pelajari setiap halaman dengan saksama. Ikuti alur dari awal sampai akhir.' },
-      { icon: '💬', title: 'Diskusi & Tulis', body: 'Jawab pertanyaan diskusi — jawabanmu otomatis tersimpan dan akan tampil lagi di Refleksi.' },
-      { icon: '🎮', title: 'Game Interaktif', body: 'Uji pemahamanmu dengan game seru. Setiap jawaban benar memberi penjelasan mendalam!' },
-      { icon: '📝', title: 'Refleksi', body: 'Tuliskan refleksimu di akhir pembelajaran. Jawaban akan jadi portofoliomu hari ini.' },
-    ],
-    tips: 'Ikuti alur dari awal sampai akhir. Jawab semua pertanyaan diskusi — jawabanmu akan muncul di Refleksi sebagai portofolio belajarmu hari ini!',
+    items,
+    tips,
   };
 }
 
@@ -864,11 +1129,22 @@ export function buildReviewSlotData(
   const questions: Array<{q: string; answer: string}> = [];
 
   // FIX: Include TP items from previous AND current pertemuan for review
+  // with richer answers from materi content
   for (const t of tp) {
     if (t.pertemuan <= pertemuanKe) {
+      // Try to find matching materi content for a better answer
+      const matchingBlok = materi.blok.find(
+        (b) => b.judul && t.desc && (
+          b.judul.toLowerCase().includes(t.desc.toLowerCase().slice(0, 15)) ||
+          t.desc.toLowerCase().includes(b.judul.toLowerCase().slice(0, 10))
+        ),
+      );
+      const answerText = matchingBlok?.isi
+        ? matchingBlok.isi.slice(0, 200) + (matchingBlok.isi.length > 200 ? '…' : '')
+        : `Tujuan pembelajaran: ${t.desc}`;
       questions.push({
         q: `${t.verb} ${t.desc}`,
-        answer: `Jawaban merujuk pada: ${t.desc}`,
+        answer: answerText,
       });
     }
   }
@@ -877,6 +1153,19 @@ export function buildReviewSlotData(
     if (blok.tipe === 'definisi' && blok.isi) {
       questions.push({
         q: `Jelaskan: ${blok.judul || 'konsep ini'}`,
+        answer: blok.isi,
+      });
+    }
+    // FIX: Also create review Q&A from highlight and infobox bloks
+    if (blok.tipe === 'highlight' && blok.isi) {
+      questions.push({
+        q: `Ingat kembali: ${blok.judul || 'poin penting'}`,
+        answer: blok.isi,
+      });
+    }
+    if (blok.tipe === 'infobox' && blok.isi) {
+      questions.push({
+        q: `Apa yang kamu ketahui tentang ${blok.judul || 'topik ini'}?`,
         answer: blok.isi,
       });
     }
@@ -889,10 +1178,21 @@ export function buildReviewSlotData(
     );
   }
 
+  // FIX: Add cardGrid from materi compare bloks for visual review
+  const cardGrid: CardGridItem[] = [];
+  for (const blok of materi.blok) {
+    if (blok.tipe === 'compare' && blok.kiri && blok.kanan) {
+      cardGrid.push(
+        { icon: blok.kiri.icon || '⬅️', title: blok.kiri.judul || 'Kiri', body: (blok.kiri.isi || '').slice(0, 120), accentVar: '--c' },
+        { icon: blok.kanan.icon || '➡️', title: blok.kanan.judul || 'Kanan', body: (blok.kanan.isi || '').slice(0, 120), accentVar: '--p' },
+      );
+    }
+  }
+
   return {
     _templateId: 'review',
     title: `Review: ${meta.namaBab || 'Materi Sebelumnya'}`,
-    questions: questions.slice(0, 5),
+    questions: questions.slice(0, 6),
     diskusiKelompok: [{
       tipe: 3 as 3,
       ikon: '🔄',
@@ -900,5 +1200,6 @@ export function buildReviewSlotData(
       judul: 'Ingat Kembali Materi Sebelumnya!',
       isi: 'Ketuk kartu untuk melihat jawaban. Pastikan kamu ingat poin-poin penting sebelum lanjut ke materi baru.',
     }],
+    cardGrid: cardGrid.length > 0 ? cardGrid : undefined,
   };
 }

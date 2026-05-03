@@ -165,18 +165,18 @@ export function autoBuildScreens(authoringData: AuthoringData): AssemblyScreen[]
   // SCREEN SEQUENCE — Generate COMPLETE pages
   // ═══════════════════════════════════════════════════════════════
 
-  // 1. Cover — always first
+  // 1. Cover — always first — FIX: pass cp for elemen data
   screens.push({
     id: makeScreenId('cover'),
     templateId: 'cover',
-    data: buildCoverSlotData(meta, accentVar, pertemuanKe),
+    data: buildCoverSlotData(meta, accentVar, pertemuanKe, cp),
   });
 
-  // 2. Petunjuk — always (after cover)
+  // 2. Petunjuk — always (after cover) — FIX: pass kuis & modules for content-aware items
   screens.push({
     id: makeScreenId('petunjuk'),
     templateId: 'petunjuk',
-    data: buildPetunjukSlotData(meta, atp),
+    data: buildPetunjukSlotData(meta, atp, kuis, modules, materi),
   });
 
   // 3. Review — if Pertemuan 2+ (review previous pertemuan)
@@ -241,7 +241,7 @@ export function autoBuildScreens(authoringData: AuthoringData): AssemblyScreen[]
     screens.push({
       id: makeScreenId('diskusi-timer'),
       templateId: 'diskusi-timer',
-      data: buildDiskusiTimerSlotData(atp, meta, accentVar),
+      data: buildDiskusiTimerSlotData(atp, meta, accentVar, materi),
     });
   }
 
@@ -285,7 +285,7 @@ export function autoBuildScreens(authoringData: AuthoringData): AssemblyScreen[]
     screens.push({
       id: makeScreenId('kuis'),
       templateId: 'kuis',
-      data: buildKuisSlotData(kuis, accentVar),
+      data: buildKuisSlotData(kuis, accentVar, meta),
     });
   }
 
@@ -323,18 +323,19 @@ export function autoBuildScreens(authoringData: AuthoringData): AssemblyScreen[]
   });
 
   // 13b. Refleksi — always (after hasil)
-  // FIX: Pass meta + materi for context-aware prompts
+  // FIX: Pass modules for flashcard ringkasan
   screens.push({
     id: makeScreenId('refleksi'),
     templateId: 'refleksi',
-    data: buildRefleksiSlotData(accentVar, meta, materi),
+    data: buildRefleksiSlotData(accentVar, meta, materi, modules),
   });
 
   // 14. Penutup — always (with nextPreview)
+  // FIX: Pass kuis & modules for dynamic stats
   screens.push({
     id: makeScreenId('penutup'),
     templateId: 'penutup',
-    data: buildPenutupSlotData(meta, atp, accentVar, pertemuanKe),
+    data: buildPenutupSlotData(meta, atp, accentVar, pertemuanKe, kuis, modules),
   });
 
   return screens;
