@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuthoringStore } from '@/store/authoring-store';
-import { generateExportHtml } from '@/lib/export-html';
+import { autoBuildConfig } from '@/lib/templates/auto-build';
+import { assembleHTML } from '@/lib/templates/assembly';
 
 // ── Screen definitions for navigation ────────────────────────────
 const SCREEN_OPTIONS = [
@@ -43,14 +44,16 @@ export default function LivePreview() {
   const games = useAuthoringStore((s) => s.games);
   const dirty = useAuthoringStore((s) => s.dirty);
 
-  // Generate HTML with debounce
+  // Generate HTML using the NEW assembly pipeline (autoBuildConfig + assembleHTML)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       try {
-        const html = generateExportHtml({
-          meta, cp, tp, atp, alur, skenario, kuis, materi, modules, games,
+        const config = autoBuildConfig({
+          meta, cp, tp, atp, alur, skenario, kuis, modules, games, materi,
+          pertemuanKe: 1,
         });
+        const html = assembleHTML(config);
         setHtmlContent(html);
       } catch (err) {
         console.error('Failed to generate preview HTML:', err);
@@ -63,32 +66,42 @@ export default function LivePreview() {
   // activeScreen is NOT in dependencies so iframe doesn't re-render on screen change
   const srcdoc = useMemo(() => {
     if (!htmlContent) return '';
+    // The new assembly pipeline uses goto(id) function in JS
     const navScript = `
 <script>
   (function(){
-    var _origGo = window.goScreen;
-    // Override goScreen to notify parent for dropdown sync ONLY
-    window.goScreen = function(id) {
-      if (_origGo) _origGo(id);
+    // Override goto to notify parent for screen sync
+    var _origGoto = window.goto;
+    window.goto = function(id) {
+      if (_origGoto) _origGoto(id);
       window.parent.postMessage({ type: 'screenChange', screen: id }, '*');
     };
-    // Listen for navigateTo commands from parent (when user changes dropdown)
+    // Also override goScreen if it exists (backward compat)
+    var _origGoScreen = window.goScreen;
+    window.goScreen = function(id) {
+      if (_origGoScreen) _origGoScreen(id);
+      window.parent.postMessage({ type: 'screenChange', screen: id }, '*');
+    };
+    // Listen for navigateTo commands from parent
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'navigateTo' && e.data.screen) {
-        if (_origGo) _origGo(e.data.screen);
+        if (_origGoto) _origGoto(e.data.screen);
+        else if (_origGoScreen) _origGoScreen(e.data.screen);
         window.parent.postMessage({ type: 'screenChange', screen: e.data.screen }, '*');
       }
     });
     // Navigate to initial screen on first load
-    document.addEventListener('DOMContentLoaded', function(){
-      if (window.goScreen && '${activeScreen}') {
-        window.goScreen('${activeScreen}');
+    function navToInitial() {
+      var target = '${activeScreen}';
+      if (target && (window.goto || window.goScreen)) {
+        if (window.goto) window.goto(target);
+        else if (window.goScreen) window.goScreen(target);
       }
-    });
-    if (document.readyState !== 'loading') {
-      if (window.goScreen && '${activeScreen}') {
-        window.goScreen('${activeScreen}');
-      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', navToInitial);
+    } else {
+      navToInitial();
     }
   })();
 <\/script>`;

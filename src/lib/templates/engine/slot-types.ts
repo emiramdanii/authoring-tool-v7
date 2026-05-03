@@ -37,6 +37,11 @@ export type TemplateSlotSchema = Record<string, SlotField>;
 // ═══════════════════════════════════════════════════════════════
 
 // ── 1. Cover ────────────────────────────────────────────────────
+export interface CoverChip {
+  icon: string;
+  label: string;
+}
+
 export interface CoverSlotData {
   _templateId: 'cover';
   icon: string;
@@ -44,6 +49,14 @@ export interface CoverSlotData {
   subtitle: string;
   mapel: string;
   kelas: string;
+  pertemuan?: string;
+  bab?: string;
+  durasi?: string;
+  fase?: string;
+  elemen?: string;
+  chips?: CoverChip[];
+  ctaText?: string;
+  accentVar?: string;
 }
 
 // ── 2. Dokumen (CP / TP / ATP) ─────────────────────────────────
@@ -95,6 +108,68 @@ export interface TujuanSlotData {
   tpItems: TpSlotItem[];
 }
 
+// ── Shared sub-component interfaces (reusable across templates) ─
+
+/** Diskusi Kelompok Banner — colored banner for group discussion instructions */
+export interface DiskusiKelompokBanner {
+  tipe: 1 | 2 | 3; // 1=hijau, 2=kuning, 3=ungu
+  ikon: string;
+  label: string;
+  judul: string;
+  isi: string;
+  timerDetik?: number;
+}
+
+/** Def-box — definition/callout box with left border accent */
+export interface DefBoxItem {
+  text: string;
+  accentVar?: string; // '--y', '--c', '--g', '--p', '--r', '--o'
+}
+
+/** Card Grid 2×2 — info cards with colored backgrounds */
+export interface CardGridItem {
+  icon: string;
+  title: string;
+  body: string;
+  accentVar?: string;
+}
+
+/** Diskusi box — textarea + save button for discussion answers */
+export interface DiskusiBoxData {
+  prompt: string;
+  placeholder: string;
+  textareaId: string;
+  saveKey: string;
+  saveLabel: string;
+  accentVar?: string;
+}
+
+/** Norma Tab item — for norma-type tabbed content */
+export interface NormaTabItem {
+  id: string;
+  icon: string;
+  label: string;
+  color: string;
+  bg: string;
+  bc: string;
+  bg2: string;
+  sumber: string;
+  sifat: string;
+  tujuan: string;
+  sanksiTipe: string;
+  sanksiItems: string[];
+  contoh: string;
+  pelanggaran: { ikon: string; teks: string; sanksi: string }[];
+}
+
+/** Tabel Accordion item — expandable table row */
+export interface TabelAccordionItem {
+  icon: string;
+  label: string;
+  color: string;
+  details: { label: string; value: string }[];
+}
+
 // ── 4. Review ───────────────────────────────────────────────────
 export interface ReviewQuestion {
   q: string;
@@ -105,6 +180,9 @@ export interface ReviewSlotData {
   _templateId: 'review';
   title: string;
   questions: ReviewQuestion[];
+  diskusiKelompok?: DiskusiKelompokBanner[];
+  cardGrid?: CardGridItem[];
+  diskusiBox?: DiskusiBoxData;
 }
 
 // ── 5. Materi-TabIcons ──────────────────────────────────────────
@@ -112,25 +190,61 @@ export interface MateriTabItem {
   icon: string;
   label: string;
   content: string;
+  /** Optional rich sub-components rendered inside this tab */
+  defBoxes?: DefBoxItem[];
+  cardGrid?: CardGridItem[];
 }
 
 export interface MateriTabIconsSlotData {
   _templateId: 'materi-tabicons';
   title: string;
   tabs: MateriTabItem[];
+  /** Show read-tracking checkmarks and progress bar on tabs */
+  readTracking?: boolean;
+  /** Def-boxes rendered above tab content */
+  defBoxes?: DefBoxItem[];
+  /** Card grid rendered above tab content */
+  cardGrid?: CardGridItem[];
+  /** Diskusi kelompok banner(s) on this page */
+  diskusiKelompok?: DiskusiKelompokBanner[];
+  /** Norma tabs (alternative to regular tabs — for norma-type content) */
+  normaTabs?: NormaTabItem[];
+  /** Tabel accordion below norma tabs */
+  tabelAccordion?: TabelAccordionItem[];
+  /** Diskusi box with textarea + save */
+  diskusiBox?: DiskusiBoxData;
 }
 
 // ── 6. Materi-Accordion ─────────────────────────────────────────
+export interface MateriAccordionStep {
+  emoji: string;
+  text: string;
+}
+
 export interface MateriAccordionSection {
   icon: string;
   title: string;
+  /** Optional highlight portion of the title (rendered with <span class="hl">) */
+  titleHighlight?: string;
+  /** Optional subtitle below the title in the section header */
+  subtitle?: string;
   content: string;
+  defBoxes?: DefBoxItem[];
+  cardGrid?: CardGridItem[];
+  /** Numbered step-by-step list with emoji bullets */
+  steps?: MateriAccordionStep[];
 }
 
 export interface MateriAccordionSlotData {
   _templateId: 'materi-accordion';
   title: string;
+  /** Estimated reading duration in minutes (shown in chip-sc header) */
+  estimatedMinutes?: number;
   sections: MateriAccordionSection[];
+  defBoxes?: DefBoxItem[];
+  cardGrid?: CardGridItem[];
+  diskusiKelompok?: DiskusiKelompokBanner[];
+  diskusiBox?: DiskusiBoxData;
 }
 
 // ── 7. Diskusi+Timer ───────────────────────────────────────────
@@ -140,6 +254,14 @@ export interface DiskusiTimerSlotData {
   prompt: string;
   duration: number;
   questions: string[];
+  /** Diskusi kelompok banner(s) */
+  diskusiKelompok?: DiskusiKelompokBanner[];
+  /** Definition boxes */
+  defBoxes?: DefBoxItem[];
+  /** Info card grid */
+  cardGrid?: CardGridItem[];
+  /** Diskusi box with textarea + localStorage save */
+  diskusiBox?: DiskusiBoxData;
 }
 
 // ── 8. Sortir Game ──────────────────────────────────────────────
@@ -158,6 +280,7 @@ export interface SortirGameSlotData {
   title: string;
   items: SortirItem[];
   categories: SortirCategory[];
+  diskusiHint?: string; // discussion hint text before the game
 }
 
 // ── 9. Roda Game ────────────────────────────────────────────────
@@ -222,13 +345,48 @@ export interface RefleksiPrompt {
   placeholder: string;
 }
 
+export interface RefleksiPortofolio {
+  id: string;
+  label: string;
+  value: string;
+}
+
 export interface RefleksiSlotData {
   _templateId: 'refleksi';
   title: string;
   prompts: RefleksiPrompt[];
+  portofolio?: RefleksiPortofolio[];
+  /** Flashcard ringkasan shown in refleksi */
+  flashcardRingkasan?: FlashcardItem[];
+  /** Auto-populate portofolio from localStorage PORTO object */
+  useLocalStorage?: boolean;
 }
 
 // ── 14. Penutup ─────────────────────────────────────────────────
+export interface PenutupStat {
+  icon: string;
+  label: string;
+  desc: string;
+  bg: string;
+  border: string;
+}
+
+export interface PenutupNextPreviewItem {
+  icon: string;
+  label: string;
+  desc?: string;
+  accentVar?: string;
+}
+
+export interface PenutupNextPreview {
+  title: string;
+  desc: string;
+  items: PenutupNextPreviewItem[];
+  /** Gradient colors for the preview card background */
+  gradientFrom?: string;
+  gradientTo?: string;
+}
+
 export interface PenutupSlotData {
   _templateId: 'penutup';
   title: string;
@@ -236,6 +394,9 @@ export interface PenutupSlotData {
   icon: string;
   message: string;
   nextAction: string;
+  quote?: string;
+  stats?: PenutupStat[];
+  nextPreview?: PenutupNextPreview;
 }
 
 // ── 15. Kuis ────────────────────────────────────────────────────
@@ -252,7 +413,43 @@ export interface KuisSlotData {
   kuis: KuisQuestion[];
 }
 
-// ── 16. Skenario ────────────────────────────────────────────────
+// ── 16. Petunjuk ───────────────────────────────────────────────
+export interface PetunjukItem {
+  icon: string;
+  title: string;
+  body: string;
+}
+
+export interface PetunjukSlotData {
+  _templateId: 'petunjuk';
+  title: string;
+  titleHighlight: string;
+  items: PetunjukItem[];
+  tips: string;
+}
+
+// ── 17. Hotspot Image ───────────────────────────────────────────
+export interface HotspotPinData {
+  x: number;
+  y: number;
+  icon: string;
+  judul: string;
+  warna: string;
+  isi: string;
+}
+
+export interface HotspotSlotData {
+  _templateId: 'hotspot';
+  title: string;
+  intro: string;
+  imageUrl: string;
+  height: number;
+  mode: 'tooltip' | 'dialog';
+  animation: 'fade' | 'scale' | 'slide';
+  hotspots: HotspotPinData[];
+}
+
+// ── 18. Skenario ────────────────────────────────────────────────
 export interface SkenarioSetupLine {
   speaker: string;
   text: string;
@@ -312,6 +509,8 @@ export type ScreenSlotData =
   | RefleksiSlotData
   | PenutupSlotData
   | KuisSlotData
+  | PetunjukSlotData
+  | HotspotSlotData
   | SkenarioSlotData;
 
 // ── Template ID type ────────────────────────────────────────────
@@ -330,6 +529,23 @@ export const SLOT_SCHEMAS: Record<TemplateId, TemplateSlotSchema> = {
     subtitle:{ key: 'subtitle', type: 'text',  label: 'Subjudul',      default: '' },
     mapel:   { key: 'mapel',    type: 'text',  label: 'Mata Pelajaran', default: '' },
     kelas:   { key: 'kelas',    type: 'text',  label: 'Kelas',         default: '' },
+    pertemuan:{ key: 'pertemuan', type: 'text', label: 'Pertemuan',    default: '' },
+    bab:     { key: 'bab',      type: 'text',  label: 'Bab',           default: '' },
+    durasi:  { key: 'durasi',   type: 'text',  label: 'Durasi (menit)',default: '' },
+    fase:    { key: 'fase',     type: 'text',  label: 'Fase',          default: '' },
+    elemen:  { key: 'elemen',   type: 'text',  label: 'Elemen',        default: '' },
+    chips:   { key: 'chips',    type: 'list',  label: 'Chips',         default: null },
+    ctaText: { key: 'ctaText',  type: 'text',  label: 'Teks Tombol',   default: '' },
+    accentVar:{ key: 'accentVar', type: 'select', label: 'Warna Aksen', default: '--y',
+      options: [
+        { value: '--y', label: '🟡 Kuning' },
+        { value: '--c', label: '🔵 Cyan' },
+        { value: '--g', label: '🟢 Hijau' },
+        { value: '--p', label: '🟣 Ungu' },
+        { value: '--r', label: '🔴 Merah' },
+        { value: '--o', label: '🟠 Oranye' },
+      ],
+    },
   },
 
   // ── 2. Dokumen (CP / TP / ATP) ──────────────────────────────
@@ -351,35 +567,57 @@ export const SLOT_SCHEMAS: Record<TemplateId, TemplateSlotSchema> = {
 
   // ── 4. Review ────────────────────────────────────────────────
   review: {
-    title:     { key: 'title',     type: 'text', label: 'Judul',       default: '' },
-    questions: { key: 'questions', type: 'list', label: 'Pertanyaan',  default: null },
+    title:            { key: 'title',            type: 'text', label: 'Judul',              default: '' },
+    questions:        { key: 'questions',         type: 'list', label: 'Pertanyaan',         default: null },
+    diskusiKelompok:  { key: 'diskusiKelompok',   type: 'list', label: 'Banner Diskusi Kelompok', default: null },
+    cardGrid:         { key: 'cardGrid',          type: 'list', label: 'Card Grid',          default: null },
+    diskusiBox:       { key: 'diskusiBox',        type: 'list', label: 'Diskusi Box',        default: null },
   },
 
   // ── 5. Materi-TabIcons ───────────────────────────────────────
   'materi-tabicons': {
-    title: { key: 'title', type: 'text', label: 'Judul',  default: '' },
-    tabs:  { key: 'tabs',  type: 'list', label: 'Tab Icons', default: null },
+    title:           { key: 'title',           type: 'text',     label: 'Judul',                default: '' },
+    tabs:            { key: 'tabs',             type: 'list',     label: 'Tab Icons',             default: null },
+    readTracking:    { key: 'readTracking',    type: 'select',   label: 'Read Tracking',         default: 'no',
+      options: [{ value: 'no', label: 'Tidak' }, { value: 'yes', label: 'Ya' }],
+    },
+    defBoxes:        { key: 'defBoxes',         type: 'list',     label: 'Def-Box',               default: null },
+    cardGrid:        { key: 'cardGrid',          type: 'list',     label: 'Card Grid',             default: null },
+    diskusiKelompok: { key: 'diskusiKelompok',   type: 'list',     label: 'Banner Diskusi Kelompok', default: null },
+    normaTabs:       { key: 'normaTabs',         type: 'list',     label: 'Norma Tabs',            default: null },
+    tabelAccordion:  { key: 'tabelAccordion',    type: 'list',     label: 'Tabel Accordion',       default: null },
+    diskusiBox:      { key: 'diskusiBox',        type: 'list',     label: 'Diskusi Box',           default: null },
   },
 
   // ── 6. Materi-Accordion ──────────────────────────────────────
   'materi-accordion': {
-    title:    { key: 'title',    type: 'text', label: 'Judul',     default: '' },
-    sections: { key: 'sections', type: 'list', label: 'Seksi',    default: null },
+    title:             { key: 'title',             type: 'text',   label: 'Judul',                     default: '' },
+    estimatedMinutes:  { key: 'estimatedMinutes',  type: 'number', label: 'Estimasi Durasi (menit)',    default: 15 },
+    sections:          { key: 'sections',          type: 'list',   label: 'Seksi',                     default: null },
+    defBoxes:        { key: 'defBoxes',         type: 'list', label: 'Def-Box',                 default: null },
+    cardGrid:        { key: 'cardGrid',          type: 'list', label: 'Card Grid',               default: null },
+    diskusiKelompok: { key: 'diskusiKelompok',   type: 'list', label: 'Banner Diskusi Kelompok', default: null },
+    diskusiBox:      { key: 'diskusiBox',        type: 'list', label: 'Diskusi Box',             default: null },
   },
 
   // ── 7. Diskusi+Timer ─────────────────────────────────────────
   'diskusi-timer': {
-    title:    { key: 'title',    type: 'text',   label: 'Judul',       default: '' },
-    prompt:   { key: 'prompt',   type: 'richtext', label: 'Prompt Diskusi', default: '' },
-    duration: { key: 'duration', type: 'number', label: 'Durasi (menit)', default: 10 },
-    questions:{ key: 'questions',type: 'list',    label: 'Pertanyaan',  default: null },
+    title:           { key: 'title',           type: 'text',     label: 'Judul',                   default: '' },
+    prompt:          { key: 'prompt',           type: 'richtext', label: 'Prompt Diskusi',          default: '' },
+    duration:        { key: 'duration',         type: 'number',   label: 'Durasi (menit)',          default: 10 },
+    questions:       { key: 'questions',        type: 'list',     label: 'Pertanyaan',              default: null },
+    diskusiKelompok: { key: 'diskusiKelompok',   type: 'list',     label: 'Banner Diskusi Kelompok', default: null },
+    defBoxes:        { key: 'defBoxes',         type: 'list',     label: 'Def-Box',                 default: null },
+    cardGrid:        { key: 'cardGrid',          type: 'list',     label: 'Card Grid',               default: null },
+    diskusiBox:      { key: 'diskusiBox',        type: 'list',     label: 'Diskusi Box',             default: null },
   },
 
   // ── 8. Sortir Game ───────────────────────────────────────────
   'sortir-game': {
-    title:      { key: 'title',      type: 'text', label: 'Judul',       default: '' },
-    items:      { key: 'items',      type: 'list', label: 'Item Sortir', default: null },
-    categories: { key: 'categories', type: 'list', label: 'Kategori',    default: null },
+    title:       { key: 'title',       type: 'text', label: 'Judul',        default: '' },
+    items:       { key: 'items',       type: 'list', label: 'Item Sortir',  default: null },
+    categories:  { key: 'categories',  type: 'list', label: 'Kategori',     default: null },
+    diskusiHint: { key: 'diskusiHint', type: 'text', label: 'Hint Diskusi', default: '' },
   },
 
   // ── 9. Roda Game ─────────────────────────────────────────────
@@ -420,17 +658,25 @@ export const SLOT_SCHEMAS: Record<TemplateId, TemplateSlotSchema> = {
 
   // ── 13. Refleksi ─────────────────────────────────────────────
   refleksi: {
-    title:   { key: 'title',   type: 'text', label: 'Judul',     default: '' },
-    prompts: { key: 'prompts', type: 'list', label: 'Prompt',    default: null },
+    title:             { key: 'title',             type: 'text',   label: 'Judul',                    default: '' },
+    prompts:           { key: 'prompts',            type: 'list',   label: 'Prompt',                   default: null },
+    portofolio:        { key: 'portofolio',         type: 'list',   label: 'Portofolio',               default: null },
+    flashcardRingkasan:{ key: 'flashcardRingkasan', type: 'list',   label: 'Flashcard Ringkasan',      default: null },
+    useLocalStorage:   { key: 'useLocalStorage',    type: 'select', label: 'Auto Portofolio (localStorage)', default: 'no',
+      options: [{ value: 'no', label: 'Tidak' }, { value: 'yes', label: 'Ya' }],
+    },
   },
 
   // ── 14. Penutup ──────────────────────────────────────────────
   penutup: {
-    title:      { key: 'title',      type: 'text',   label: 'Judul',         default: '' },
-    subtitle:   { key: 'subtitle',   type: 'text',   label: 'Subjudul',      default: '' },
-    icon:       { key: 'icon',       type: 'text',   label: 'Ikon',          default: '🎓' },
-    message:    { key: 'message',    type: 'richtext', label: 'Pesan',        default: '' },
-    nextAction: { key: 'nextAction', type: 'text',   label: 'Aksi Berikutnya', default: '' },
+    title:       { key: 'title',       type: 'text',     label: 'Judul',            default: '' },
+    subtitle:    { key: 'subtitle',    type: 'text',     label: 'Subjudul',         default: '' },
+    icon:        { key: 'icon',        type: 'text',     label: 'Ikon',             default: '🎓' },
+    message:     { key: 'message',     type: 'richtext', label: 'Pesan',            default: '' },
+    nextAction:  { key: 'nextAction',  type: 'text',     label: 'Aksi Berikutnya',  default: '' },
+    quote:       { key: 'quote',       type: 'text',     label: 'Kutipan Motivasi', default: '' },
+    stats:       { key: 'stats',       type: 'list',     label: 'Statistik',        default: null },
+    nextPreview: { key: 'nextPreview', type: 'list',     label: 'Preview Pertemuan Berikutnya', default: null },
   },
 
   // ── 15. Kuis ─────────────────────────────────────────────────
@@ -439,7 +685,37 @@ export const SLOT_SCHEMAS: Record<TemplateId, TemplateSlotSchema> = {
     kuis:  { key: 'kuis',  type: 'list', label: 'Soal Kuis', default: null },
   },
 
-  // ── 16. Skenario ─────────────────────────────────────────────
+  // ── 16. Petunjuk ─────────────────────────────────────────────
+  petunjuk: {
+    title:          { key: 'title',          type: 'text', label: 'Judul',             default: '' },
+    titleHighlight: { key: 'titleHighlight', type: 'text', label: 'Highlight Judul',   default: '' },
+    items:          { key: 'items',          type: 'list', label: 'Item Petunjuk',     default: null },
+    tips:           { key: 'tips',           type: 'text', label: 'Tips',              default: '' },
+  },
+
+  // ── 17. Hotspot ───────────────────────────────────────────────
+  hotspot: {
+    title:     { key: 'title',     type: 'text',   label: 'Judul',            default: '' },
+    intro:     { key: 'intro',     type: 'text',   label: 'Intro',            default: '' },
+    imageUrl:  { key: 'imageUrl',  type: 'image',  label: 'URL Gambar',       default: '' },
+    height:    { key: 'height',    type: 'number', label: 'Tinggi Gambar (px)',default: 300 },
+    mode:      { key: 'mode',      type: 'select', label: 'Mode Tampilan',    default: 'tooltip',
+      options: [
+        { value: 'tooltip', label: 'Tooltip' },
+        { value: 'dialog',  label: 'Dialog' },
+      ],
+    },
+    animation: { key: 'animation', type: 'select', label: 'Animasi',          default: 'fade',
+      options: [
+        { value: 'fade',  label: 'Fade' },
+        { value: 'scale', label: 'Scale' },
+        { value: 'slide', label: 'Slide' },
+      ],
+    },
+    hotspots:  { key: 'hotspots',  type: 'list',   label: 'Hotspot Pin',      default: null },
+  },
+
+  // ── 18. Skenario ─────────────────────────────────────────────
   skenario: {
     title:    { key: 'title',    type: 'text', label: 'Judul',              default: '' },
     skenario: { key: 'skenario', type: 'list', label: 'Babak Skenario',     default: null },
@@ -524,6 +800,11 @@ export function createDefaultSlotData<T extends TemplateId>(
     data.alur = [];
   }
 
+  // Initialize nested arrays for hotspot
+  if (templateId === 'hotspot') {
+    data.hotspots = data.hotspots || [];
+  }
+
   return data as unknown as Extract<ScreenSlotData, { _templateId: T }>;
 }
 
@@ -547,5 +828,7 @@ export const TEMPLATE_META: Record<TemplateId, { label: string; icon: string; de
   refleksi:           { label: 'Refleksi',           icon: '💭', description: 'Refleksi pembelajaran siswa' },
   penutup:            { label: 'Penutup',            icon: '🎓', description: 'Penutup & rangkuman pertemuan' },
   kuis:               { label: 'Kuis',               icon: '❓', description: 'Kuis pilihan ganda interaktif' },
+  petunjuk:           { label: 'Petunjuk',           icon: '📌', description: 'Petunjuk penggunaan media' },
+  hotspot:            { label: 'Hotspot Image',       icon: '🗺️', description: 'Gambar interaktif dengan titik hotspot' },
   skenario:           { label: 'Skenario',           icon: '🎭', description: 'Skenario interaktif bercabang' },
 };

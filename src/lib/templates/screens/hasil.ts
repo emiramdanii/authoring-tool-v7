@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-// HASIL.TS — Results / Score screen template
-// Generates the results page with animated score circle,
-// appreciation level badges, reflection textareas, and confetti.
-// Matches the s-hasil design from export-html.ts.
+// HASIL.TS — Results / Score screen template for MPI export
+// Generates the results page with animated conic-gradient score
+// circle, appreciation level badges, score breakdown, reflection
+// textareas, portofolio section, and confetti.
+// Matches the preset s-hasil design quality.
 // ═══════════════════════════════════════════════════════════════
 
 import type { HasilSlotData } from '../engine/slot-types';
@@ -28,7 +29,6 @@ interface LevelInfo {
 }
 
 function getLevelInfo(score: number, level?: string): LevelInfo {
-  // If explicit level is provided, use it; otherwise derive from score
   if (level === 'sangat-baik' || score >= 85) {
     return {
       label: 'Sangat Baik!',
@@ -64,65 +64,70 @@ export function renderHasilHTML(data: HasilSlotData, screenId: string): string {
   const levelInfo = getLevelInfo(score, data.level);
   const shouldConfetti = score >= 70;
 
-  return `<div class="screen" id="${esc(screenId)}">
-  <nav class="navbar">
-    <span class="nav-logo">${esc(data.namaBab || data.title || 'Hasil')}</span>
-    <div class="nav-prog"><div class="nav-prog-fill" style="width:100%"></div></div>
-    <span class="nav-score">${score} ⭐</span>
-  </nav>
+  return `<div class="screen" id="${esc(screenId)}" data-nav-label="Hasil">
   <div class="main" style="text-align:center">
+
+    <!-- Header -->
     <div class="card" style="margin-bottom:14px">
       <div class="h2">🏆 <span class="hl">Hasil</span> Belajar</div>
       <p class="sub mt8">${esc(data.namaBab || 'Bab ini')} · ${esc(data.totalKuis || 0)} soal</p>
     </div>
 
-    <!-- Score Circle -->
+    <!-- Score Circle — conic-gradient only, no SVG overlay -->
     <div class="hasil-circle" id="hasilCircle" style="--prog:0%">
       <div class="hasil-score">
-        <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:${esc(levelInfo.color)}" id="hasilNum">0</div>
-        <div style="font-size:.7rem;color:var(--muted)">SKOR</div>
+        <div class="hs-num" id="hasilNum" style="color:${esc(levelInfo.color)}">0</div>
+        <div class="hs-label">SKOR</div>
       </div>
     </div>
 
     <!-- Level Badge -->
-    <div id="hasilLevel" style="padding:10px 20px;border-radius:12px;font-weight:800;font-size:.92rem;margin:12px 0;display:inline-block;background:${esc(levelInfo.bgColor)};border:1px solid ${esc(levelInfo.borderColor)};color:${esc(levelInfo.color)}">
+    <div id="hasilLevel" class="level-badge" style="background:${esc(levelInfo.bgColor)};border:1px solid ${esc(levelInfo.borderColor)};color:${esc(levelInfo.color)}">
       ${esc(levelInfo.emoji)} ${esc(levelInfo.label)}
     </div>
 
     <!-- Score Breakdown -->
     <div class="card mt14" style="text-align:left">
-      <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📊 Rincian Skor</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:120px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--g)" id="hasilCorrect">0</div>
-          <div style="font-size:.72rem;color:var(--muted)">Benar</div>
+      <div class="hs-section-title">📊 Rincian Skor</div>
+      <div class="hs-breakdown">
+        <div class="hs-stat" style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2)">
+          <div class="hs-stat-num" style="color:var(--g)" id="hasilCorrect">0</div>
+          <div class="hs-stat-label">Benar</div>
         </div>
-        <div style="flex:1;min-width:120px;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--r)" id="hasilWrong">0</div>
-          <div style="font-size:.72rem;color:var(--muted)">Salah</div>
+        <div class="hs-stat" style="background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2)">
+          <div class="hs-stat-num" style="color:var(--r)" id="hasilWrong">0</div>
+          <div class="hs-stat-label">Salah</div>
         </div>
-        <div style="flex:1;min-width:120px;background:rgba(249,193,46,.06);border:1px solid rgba(249,193,46,.2);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--y)">${esc(data.totalKuis || 0)}</div>
-          <div style="font-size:.72rem;color:var(--muted)">Total Soal</div>
+        <div class="hs-stat" style="background:rgba(249,193,46,.06);border:1px solid rgba(249,193,46,.2)">
+          <div class="hs-stat-num" style="color:var(--y)">${esc(data.totalKuis || 0)}</div>
+          <div class="hs-stat-label">Total Soal</div>
         </div>
       </div>
     </div>
 
+    <!-- Portofolio Jawaban -->
+    <div class="card mt14" style="text-align:left">
+      <div class="hs-section-title">📋 Portofolio Jawaban</div>
+      <div id="hasilPorto"></div>
+    </div>
+
     <!-- Reflection -->
     <div class="card mt14" style="text-align:left">
-      <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">💭 Refleksi Pembelajaran</div>
+      <div class="hs-section-title">💭 Refleksi Pembelajaran</div>
       <div class="refl-item">
         <label>💭 Apa yang paling kamu pelajari hari ini?</label>
-        <textarea placeholder="Tuliskan refleksimu…"></textarea>
+        <textarea placeholder="Tuliskan refleksimu…" id="refl-1"></textarea>
       </div>
       <div class="refl-item">
         <label>🌟 Bagaimana kamu akan menerapkannya?</label>
-        <textarea placeholder="Rencana aksi nyata…"></textarea>
+        <textarea placeholder="Rencana aksi nyata…" id="refl-2"></textarea>
       </div>
       <div class="refl-item">
         <label>🎯 Apa yang masih ingin kamu pelajari lebih lanjut?</label>
-        <textarea placeholder="Topik yang ingin dieksplorasi…"></textarea>
+        <textarea placeholder="Topik yang ingin dieksplorasi…" id="refl-3"></textarea>
       </div>
+      <button class="btn btn-c btn-sm" onclick="saveReflections()" style="margin-top:8px">💾 Simpan Refleksi</button>
+      <span id="reflSaved" class="saved-badge" style="display:none;margin-left:8px">✅ Tersimpan</span>
     </div>
 
     <div class="btn-row btn-center mt14">
@@ -131,72 +136,156 @@ export function renderHasilHTML(data: HasilSlotData, screenId: string): string {
     </div>
   </div>
 
-  <!-- Confetti container -->
-  <div id="confWrap" style="position:fixed;inset:0;pointer-events:none;z-index:9998"></div>
-
   <script data-hasil-init="${esc(screenId)}">
   (function(){
-    var TARGET_SCORE = ${score};
-    var TOTAL_KUIS = ${data.totalKuis || 0};
-    var SHOULD_CONFETTI = ${shouldConfetti};
+    var STATIC_SCORE = ${score};
+    var STATIC_TOTAL = ${data.totalKuis || 0};
+    var SHOULD_CONFETTI_STATIC = ${shouldConfetti};
 
-    // ── Animate score counter ───────────────────────────
+    // ── Resolve actual score from runtime or static ──────
+    // Kuis.ts sets window._kuisResult before navigating here.
+    // Fall back to static data if no quiz was taken.
+    function resolveScore() {
+      if (window._kuisResult && typeof window._kuisResult.skor === 'number') {
+        return window._kuisResult;
+      }
+      return { skor: STATIC_SCORE, correct: Math.round((STATIC_SCORE / 100) * STATIC_TOTAL), wrong: STATIC_TOTAL - Math.round((STATIC_SCORE / 100) * STATIC_TOTAL), total: STATIC_TOTAL };
+    }
+
+    // ── Animate score counter & conic gradient ──────────
     function animateScore(){
+      var result = resolveScore();
+      var targetScore = result.skor;
+      var totalKuis = result.total;
+      var targetCorrect = result.correct;
+      var targetWrong = result.wrong;
+      var shouldConfetti = targetScore >= 70;
+
       var circle = document.getElementById('hasilCircle');
       var numEl = document.getElementById('hasilNum');
       var correctEl = document.getElementById('hasilCorrect');
       var wrongEl = document.getElementById('hasilWrong');
-      if(!circle || !numEl) return;
+      var totalEl = document.querySelector('#' + '${esc(screenId)}' + ' .hs-stat:last-child .hs-stat-num');
+      if (!circle || !numEl) return;
 
+      // Apply level colors immediately
+      if (typeof updateHasilLevel === 'function') updateHasilLevel(targetScore);
+
+      // Animate number and --prog variable
       var current = 0;
-      var step = Math.max(1, Math.round(TARGET_SCORE / 40));
+      var step = Math.max(1, Math.round(targetScore / 40));
       var interval = setInterval(function(){
         current += step;
-        if(current >= TARGET_SCORE){
-          current = TARGET_SCORE;
+        if (current >= targetScore) {
+          current = targetScore;
           clearInterval(interval);
-          if(SHOULD_CONFETTI) setTimeout(launchConfetti, 300);
+          if (shouldConfetti) setTimeout(launchConfetti, 300);
         }
         numEl.textContent = current;
         circle.style.setProperty('--prog', current + '%');
-        if(correctEl) correctEl.textContent = Math.round((current / 100) * TOTAL_KUIS);
-        if(wrongEl) wrongEl.textContent = TOTAL_KUIS - Math.round((current / 100) * TOTAL_KUIS);
+        if (correctEl) correctEl.textContent = Math.round((current / 100) * totalKuis);
+        if (wrongEl) wrongEl.textContent = totalKuis - Math.round((current / 100) * totalKuis);
       }, 30);
+
+      // Set total soal if available
+      if (totalEl && totalKuis) totalEl.textContent = totalKuis;
     }
 
-    // ── Confetti launcher ───────────────────────────────
-    window.launchConfetti = function(){
-      var w = document.getElementById('confWrap');
-      if(!w) return;
-      var cols = ['#f9c12e','#3ecfcf','#ff6b6b','#a78bfa','#34d399'];
-      for(var i = 0; i < 80; i++){
-        var c = document.createElement('div');
-        c.className = 'conf';
-        var sz = 4 + Math.random() * 9;
-        c.style.cssText = 'left:'+Math.random()*100+'%;top:'+(-20-Math.random()*30)+'px;width:'+sz+'px;height:'+sz+'px;background:'+cols[Math.floor(Math.random()*cols.length)]+';border-radius:'+(Math.random()>.5?'50%':'2px')+';animation-duration:'+(2+Math.random()*2)+'s;animation-delay:'+(Math.random()*.6)+'s;';
-        w.appendChild(c);
+    // ── Populate portofolio from window.PORTO ──────────
+    function populatePorto(){
+      var portoEl = document.getElementById('hasilPorto');
+      if (!portoEl) return;
+      if (window.PORTO) {
+        var keys = Object.keys(window.PORTO);
+        if (keys.length === 0) {
+          portoEl.innerHTML = '<p style="color:var(--muted);font-size:.82rem">Belum ada jawaban yang disimpan.</p>';
+        } else {
+          portoEl.innerHTML = keys.map(function(k) {
+            return '<div class="porto-card"><div class="porto-label">' + window.PORTO[k].label + '</div><div class="porto-val">' + window.PORTO[k].text + '</div></div>';
+          }).join('');
+        }
+      } else {
+        portoEl.innerHTML = '<p style="color:var(--muted);font-size:.82rem">Belum ada jawaban yang disimpan.</p>';
       }
-      setTimeout(function(){ w.innerHTML = ''; }, 5000);
+    }
+
+    // ── Save reflections to PORTO ────────────────────
+    function saveReflections() {
+      var r1 = document.getElementById('refl-1');
+      var r2 = document.getElementById('refl-2');
+      var r3 = document.getElementById('refl-3');
+      var hasContent = false;
+      if (!window.PORTO) window.PORTO = {};
+      if (r1 && r1.value.trim()) { window.PORTO['refleksi-1'] = { label: 'Apa yang dipelajari', text: r1.value.trim() }; hasContent = true; }
+      if (r2 && r2.value.trim()) { window.PORTO['refleksi-2'] = { label: 'Rencana aksi', text: r2.value.trim() }; hasContent = true; }
+      if (r3 && r3.value.trim()) { window.PORTO['refleksi-3'] = { label: 'Ingin pelajari', text: r3.value.trim() }; hasContent = true; }
+      if (!hasContent) { alert('Tulis minimal 1 refleksi ya!'); return; }
+      if (typeof addScore === 'function') addScore(5);
+      var badge = document.getElementById('reflSaved');
+      if (badge) badge.style.display = 'inline-flex';
+      // Re-populate portofolio after saving
+      populatePorto();
+    }
+    window.saveReflections = saveReflections;
+
+    // ── Update level from external (kuis submit) ──────
+    window.updateHasilLevel = function(skor) {
+      var lv = document.getElementById('hasilLevel');
+      if (!lv) return;
+      var level, emoji, color, bg, bc;
+      if (skor >= 85) {
+        level = 'Sangat Baik!'; emoji = '🌟'; color = 'var(--g)'; bg = 'rgba(52,211,153,.1)'; bc = 'rgba(52,211,153,.3)';
+      } else if (skor >= 70) {
+        level = 'Baik'; emoji = '👍'; color = 'var(--y)'; bg = 'rgba(249,193,46,.1)'; bc = 'rgba(249,193,46,.3)';
+      } else {
+        level = 'Perlu Latihan'; emoji = '💪'; color = 'var(--r)'; bg = 'rgba(255,107,107,.1)'; bc = 'rgba(255,107,107,.3)';
+      }
+      lv.textContent = emoji + ' ' + level;
+      lv.style.background = bg;
+      lv.style.borderColor = bc;
+      lv.style.color = color;
+      var numEl = document.getElementById('hasilNum');
+      if (numEl) { numEl.style.color = color; numEl.textContent = skor; }
+      // Also update the conic gradient color
+      var circle = document.getElementById('hasilCircle');
+      if (circle) {
+        circle.style.setProperty('--prog', skor + '%');
+        var colorValue = skor >= 85 ? '#34d399' : skor >= 70 ? '#f9c12e' : '#ff6b6b';
+        circle.style.background = 'conic-gradient(' + colorValue + ' 0%,' + colorValue + ' ' + skor + '%,rgba(255,255,255,.06) ' + skor + '% 100%)';
+      }
+      // Update breakdown from kuis result
+      if (window._kuisResult) {
+        var correctEl = document.getElementById('hasilCorrect');
+        var wrongEl = document.getElementById('hasilWrong');
+        if (correctEl) correctEl.textContent = window._kuisResult.correct;
+        if (wrongEl) wrongEl.textContent = window._kuisResult.wrong;
+      }
     };
 
-    // ── Auto-trigger animation when screen becomes active ──
-    var observer = new MutationObserver(function(mutations){
-      mutations.forEach(function(m){
-        if(m.target.classList && m.target.classList.contains('active')){
-          setTimeout(animateScore, 200);
-        }
+    // ── Auto-trigger when screen becomes active ───────
+    var el = document.getElementById('${esc(screenId)}');
+    if (el) {
+      el.addEventListener('screenActivate', function() {
+        setTimeout(animateScore, 200);
+        populatePorto();
       });
-    });
-    var screenEl = document.getElementById('${esc(screenId)}');
-    if(screenEl){
-      observer.observe(screenEl, { attributes: true, attributeFilter: ['class'] });
     }
-
     // Also run if already visible
-    if(screenEl && screenEl.classList.contains('active')){
+    if (el && el.classList.contains('active')) {
       setTimeout(animateScore, 200);
+      populatePorto();
     }
   })();
   </script>
+  <style>
+    .hs-num{font-family:'Fredoka One',cursive;font-size:2.1rem;}
+    .hs-label{font-size:.72rem;color:var(--muted);margin-top:2px;}
+    .level-badge{padding:10px 20px;border-radius:12px;text-align:center;font-weight:800;font-size:.92rem;margin:12px 0;display:inline-block;transition:all .3s;}
+    .hs-section-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+    .hs-breakdown{display:flex;gap:12px;flex-wrap:wrap;}
+    .hs-stat{flex:1;min-width:120px;border-radius:10px;padding:12px;text-align:center;}
+    .hs-stat-num{font-family:'Fredoka One',cursive;font-size:1.4rem;}
+    .hs-stat-label{font-size:.72rem;color:var(--muted);}
+  </style>
 </div>`;
 }

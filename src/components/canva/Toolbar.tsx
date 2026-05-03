@@ -1,6 +1,9 @@
 'use client';
 
 import { useCanvaStore } from '@/store/canva-store';
+import { useAuthoringStore } from '@/store/authoring-store';
+import { autoBuildConfig, type AuthoringData } from '@/lib/templates/auto-build';
+import { assembleHTML } from '@/lib/templates/assembly';
 import { toast } from 'sonner';
 
 export default function Toolbar() {
@@ -57,6 +60,61 @@ export default function Toolbar() {
     toast.success('Slideshow diekspor (' + pages.length + ' halaman)');
   };
 
+  // ── Export Student HTML using the new modular assembly pipeline ──
+  const handleExportStudentHTML = () => {
+    try {
+      const s = useAuthoringStore.getState();
+      const authoringData: AuthoringData = {
+        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
+        skenario: s.skenario, kuis: s.kuis, modules: s.modules,
+        games: s.games, materi: s.materi,
+      };
+
+      const config = autoBuildConfig(authoringData);
+      const html = assembleHTML(config);
+
+      const filename = (s.meta.judulPertemuan || 'media')
+        .replace(/[^a-z0-9\-]/gi, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase();
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`✅ Media siswa diekspor! (${config.screens.length} halaman)`);
+    } catch (err) {
+      console.error('Export student HTML failed:', err);
+      toast.error('❌ Gagal export media siswa');
+    }
+  };
+
+  // ── Preview Student HTML in new tab ──
+  const handlePreviewStudentHTML = () => {
+    try {
+      const s = useAuthoringStore.getState();
+      const authoringData: AuthoringData = {
+        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
+        skenario: s.skenario, kuis: s.kuis, modules: s.modules,
+        games: s.games, materi: s.materi,
+      };
+
+      const config = autoBuildConfig(authoringData);
+      const html = assembleHTML(config);
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success(`📱 Preview siswa dibuka! (${config.screens.length} halaman)`);
+    } catch (err) {
+      console.error('Preview student HTML failed:', err);
+      toast.error('❌ Gagal preview media siswa');
+    }
+  };
+
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/80 border-b border-zinc-700/50 text-xs select-none">
       {/* Logo + Title */}
@@ -108,7 +166,7 @@ export default function Toolbar() {
       </button>
       <div className="w-px h-5 bg-zinc-700 mx-1" />
 
-      {/* Action buttons — clearly labeled as Canva Design Preview */}
+      {/* Action buttons — Canva Design + Student HTML */}
       <button
         onClick={handlePreview}
         title="Preview Desain Canva (buka di tab baru)"
@@ -121,6 +179,28 @@ export default function Toolbar() {
       </button>
       <button onClick={handleExport} title="Export Halaman HTML" className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">📤</button>
       <button onClick={handleExportSlideshow} title="Export Slideshow" className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">🎞</button>
+      <div className="w-px h-5 bg-zinc-700 mx-0.5" />
+      {/* Student HTML — the main export path */}
+      <button
+        onClick={handlePreviewStudentHTML}
+        title="Preview Media Siswa (HTML lengkap dengan navigasi, kuis, skenario)"
+        className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 transition-colors border border-transparent hover:border-emerald-500/30"
+      >
+        <span className="flex items-center gap-1">
+          <span>📱</span>
+          <span className="hidden xl:inline text-[10px] font-semibold">Preview Siswa</span>
+        </span>
+      </button>
+      <button
+        onClick={handleExportStudentHTML}
+        title="Export Media Siswa (HTML standalone — buka offline di browser)"
+        className="p-1.5 rounded hover:bg-emerald-600/20 text-emerald-400 hover:text-emerald-300 transition-colors border border-transparent hover:border-emerald-500/30"
+      >
+        <span className="flex items-center gap-1">
+          <span>🎓</span>
+          <span className="hidden xl:inline text-[10px] font-semibold">Export Siswa</span>
+        </span>
+      </button>
       <button
         onClick={() => { if (confirm('Bersihkan semua elemen di halaman ini?')) clearStage(); }}
         title="Bersihkan"
@@ -132,11 +212,11 @@ export default function Toolbar() {
       {/* Ratio badge */}
       <span className="px-2 py-0.5 rounded bg-zinc-800 text-amber-400 font-bold text-[10px] ml-1">{ratioId}</span>
 
-      {/* Tip: clearly label this as Canva Design tool */}
+      {/* Tip: clearly label the two modes */}
       <div className="hidden xl:flex items-center gap-1 ml-2 text-[9px] text-amber-500/60 bg-amber-500/5 rounded px-1.5 py-0.5 border border-amber-500/10">
-        <span>🎨 Mode Desain Canva</span>
+        <span>📱 Preview/Export Siswa = HTML interaktif</span>
         <span>&middot;</span>
-        <span>Preview di atas = desain slide</span>
+        <span>🎨 Preview Desain = slide visual</span>
       </div>
       <div className="hidden lg:flex items-center gap-2 ml-2 text-[9px] text-zinc-600">
         <span>Del=hapus</span>

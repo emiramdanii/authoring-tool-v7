@@ -167,6 +167,7 @@ function PagesContent() {
   const { pages, currentPageIndex, goPage, addPage, duplicatePage, deletePage, ratioId, reorderPage, setTemplateType } = useCanvaStore();
   const ratio = useCanvaStore(s => s.currentRatio());
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
 
   const templateBadge: Record<string, { icon: string; color: string }> = {
     cover: { icon: '🏠', color: '#f9c82e' },
@@ -198,26 +199,41 @@ function PagesContent() {
               onClick={() => goPage(i)}
               draggable
               onDragStart={() => setDragIdx(i)}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDropTargetIdx(i);
+              }}
+              onDragLeave={() => setDropTargetIdx(null)}
               onDrop={(e) => {
                 e.preventDefault();
                 if (dragIdx !== null && dragIdx !== i) {
                   reorderPage(dragIdx, i);
                 }
                 setDragIdx(null);
+                setDropTargetIdx(null);
               }}
-              onDragEnd={() => setDragIdx(null)}
-              className={`relative rounded-lg overflow-hidden transition-all ${
+              onDragEnd={() => {
+                setDragIdx(null);
+                setDropTargetIdx(null);
+              }}
+              className={`relative rounded-lg overflow-hidden transition-all group ${
                 isActive
                   ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-zinc-900'
                   : 'hover:ring-1 hover:ring-zinc-600'
+              } ${dragIdx === i ? 'opacity-40 scale-95' : ''} ${
+                dropTargetIdx === i && dragIdx !== i
+                  ? 'ring-2 ring-teal-400 ring-offset-1 ring-offset-zinc-900 scale-[1.02]'
+                  : ''
               }`}
               style={{ ...bgStyle, aspectRatio: `${ratio.w}/${ratio.h}` }}
             >
               <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-1">
+                {/* Drag handle grip */}
+                <div className="absolute top-0.5 left-0.5 text-[8px] opacity-0 group-hover:opacity-60 transition-opacity cursor-grab">⠿</div>
                 {/* Template badge */}
                 <div className="absolute top-0.5 right-0.5 text-[8px]">{badge.icon}</div>
-                <div className="text-[8px] font-bold text-white truncate">{p.label}</div>
+                <div className="text-[8px] font-bold text-white truncate">{i + 1}. {p.label}</div>
               </div>
             </button>
           );

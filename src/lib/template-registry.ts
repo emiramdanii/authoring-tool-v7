@@ -20,7 +20,9 @@ import { renderHasilHTML } from './templates/screens/hasil';
 import { renderRefleksiHTML } from './templates/screens/refleksi';
 import { renderPenutupHTML } from './templates/screens/penutup';
 import { renderKuisHTML } from './templates/screens/kuis';
+import { renderPetunjukHTML } from './templates/screens/petunjuk';
 import { renderSkenarioHTML } from './templates/screens/skenario';
+import { renderHotspotHTML } from './templates/screens/hotspot';
 
 import {
   SLOT_SCHEMAS,
@@ -239,7 +241,19 @@ export const TEMPLATE_REGISTRY: Record<TemplateId, TemplateRegistryEntry> = {
     renderHTML: (data, screenId) => renderKuisHTML(data as import('./templates/engine/slot-types').KuisSlotData, screenId),
   },
 
-  // ── 16. Skenario ─────────────────────────────────────────────
+    // ── 16. Petunjuk ─────────────────────────────────────────────
+  petunjuk: {
+    id: 'petunjuk',
+    name: 'Petunjuk',
+    icon: '📌',
+    desc: 'Petunjuk penggunaan media pembelajaran',
+    category: 'utama',
+    color: '#3ecfcf',
+    slotSchema: SLOT_SCHEMAS.petunjuk,
+    renderHTML: (data, screenId) => renderPetunjukHTML(data as import('./templates/engine/slot-types').PetunjukSlotData, screenId),
+  },
+
+  // ── 17. Skenario ─────────────────────────────────────────────
   skenario: {
     id: 'skenario',
     name: 'Skenario',
@@ -249,6 +263,18 @@ export const TEMPLATE_REGISTRY: Record<TemplateId, TemplateRegistryEntry> = {
     color: '#f472b6',
     slotSchema: SLOT_SCHEMAS.skenario,
     renderHTML: (data, screenId) => renderSkenarioHTML(data as import('./templates/engine/slot-types').SkenarioSlotData, screenId),
+  },
+
+  // ── 18. Hotspot Image ───────────────────────────────────────
+  hotspot: {
+    id: 'hotspot',
+    name: 'Hotspot Image',
+    icon: '🗺️',
+    desc: 'Gambar interaktif dengan titik-titik hotspot yang bisa diklik',
+    category: 'interaktif',
+    color: '#fb923c',
+    slotSchema: SLOT_SCHEMAS.hotspot,
+    renderHTML: (data, screenId) => renderHotspotHTML(data as import('./templates/engine/slot-types').HotspotSlotData, screenId),
   },
 };
 

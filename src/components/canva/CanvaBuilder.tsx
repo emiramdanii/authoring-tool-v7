@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useCanvaStore } from '@/store/canva-store';
+import { subscribeToAuthoringChanges, syncAuthoringToCanva } from '@/lib/templates/canva-bridge';
 import Toolbar from './Toolbar';
 import StatusBar from './StatusBar';
 import IconRail from './IconRail';
@@ -21,6 +22,18 @@ export default function CanvaBuilder() {
   useEffect(() => {
     const unsub = useCanvaStore.subscribe(() => {
       useCanvaStore.getState().saveToStorage();
+    });
+    return unsub;
+  }, []);
+
+  // ── Subscribe to authoring store changes → sync to canva ─────
+  // When user edits data in the authoring panel, this bridge
+  // automatically updates canva page templateData in real-time.
+  useEffect(() => {
+    const unsub = subscribeToAuthoringChanges((changedTemplates) => {
+      // Sync all affected template data from authoring → canva
+      syncAuthoringToCanva();
+      console.log('[CanvaBridge] Synced authoring changes:', changedTemplates.join(', '));
     });
     return unsub;
   }, []);

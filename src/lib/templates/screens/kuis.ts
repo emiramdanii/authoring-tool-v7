@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // KUIS.TS — Interactive quiz screen template
 // Generates an interactive quiz page with question cards,
-// option buttons, feedback, and score tracking.
-// Matches the s-kuis design from export-html.ts.
+// option buttons, feedback, progress dots, and score tracking.
+// Matches the preset s-kuis design quality.
 // ═══════════════════════════════════════════════════════════════
 
 import type { KuisSlotData } from '../engine/slot-types';
@@ -32,13 +32,18 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
     })),
   );
 
+  // Build progress dots HTML
+  const progressDotsHTML = kuis.length > 0
+    ? `<div class="puzzle-prog" id="kuisProgDots">${kuis.map((_, i) => `<div class="puzzle-dot${i === 0 ? ' cur' : ''}" id="pdot_${i}"></div>`).join('')}</div>`
+    : '';
+
   // Build the question card HTML statically (for SSR), but JS will also
   // re-render on init for dynamic interactivity.
   const questionCardsHTML = kuis
     .map((s, i) => {
       return `<div class="q-card" id="qCard_${i}" style="animation:fadeIn .4s ease ${i * 0.08}s both">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:.72rem;font-weight:900;color:var(--c);background:rgba(62,207,207,.1);padding:3px 10px;border-radius:99px">Soal ${i + 1}</span>
+          <span style="font-size:.72rem;font-weight:900;color:var(--c);background:rgba(62,207,207,.1);padding:3px 10px;border-radius:99px">❓ Soal ${i + 1}</span>
           <span id="qStatus_${i}" style="font-size:.72rem;font-weight:800;margin-left:auto;display:none"></span>
         </div>
         <div class="q-text">${esc(s.q)}</div>
@@ -53,15 +58,11 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
     })
     .join('');
 
-  return `<div class="screen" id="${esc(screenId)}">
-  <nav class="navbar">
-    <span class="nav-logo">${esc(data.title || 'Kuis')}</span>
-    <div class="nav-prog"><div class="nav-prog-fill" style="width:75%"></div></div>
-    <span class="nav-score" id="kuisNavScore">0 ⭐</span>
-  </nav>
+  return `<div class="screen" id="${esc(screenId)}" data-nav-label="Kuis">
   <div class="main">
     <!-- Header card -->
     <div class="card" style="margin-bottom:14px">
+      <span class="chip-sc" style="background:rgba(249,193,46,.15);color:var(--y)">❓ Kuis Pengetahuan</span>
       <div class="h2">❓ <span class="hl">Kuis</span> Pengetahuan</div>
       <p class="sub mt8">${kuis.length} soal · Jawab dan lihat penjelasannya langsung.</p>
       <!-- Score tracking bar -->
@@ -77,6 +78,9 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
         </div>
       </div>
     </div>
+
+    <!-- Progress dots -->
+    ${progressDotsHTML}
 
     <!-- Question container -->
     <div id="kuisContainer">
@@ -103,6 +107,25 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
     var kuisWrong = 0;
     var kuisScore = 0;
 
+    // ── Update progress dots ─────────────────────────
+    function updateProgressDots(){
+      for(var i = 0; i < KUIS_SOAL.length; i++){
+        var dot = document.getElementById('pdot_' + i);
+        if(!dot) continue;
+        dot.className = 'puzzle-dot';
+        if(kuisAnswers[i] !== undefined){
+          dot.classList.add('done');
+        } else {
+          // Find the next unanswered question
+          var nextUnanswered = -1;
+          for(var j = 0; j < KUIS_SOAL.length; j++){
+            if(kuisAnswers[j] === undefined){ nextUnanswered = j; break; }
+          }
+          if(i === nextUnanswered) dot.classList.add('cur');
+        }
+      }
+    }
+
     window.answerQ = function(qi, choice){
       if(kuisAnswers[qi] !== undefined) return; // already answered
       kuisAnswers[qi] = choice;
@@ -124,6 +147,8 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
       } else {
         kuisCorrect++;
         kuisScore += 10;
+        // Use global scoring system
+        if(typeof addScore === 'function') addScore(10);
       }
 
       // Show feedback
@@ -148,13 +173,13 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
       var remainEl = document.getElementById('kuisRemainingCount');
       if(correctEl2) correctEl2.textContent = kuisCorrect;
       if(wrongEl2) wrongEl2.textContent = kuisWrong;
-      if(remainEl2) remainEl2.textContent = KUIS_SOAL.length - Object.keys(kuisAnswers).length;
+      if(remainEl) remainEl.textContent = KUIS_SOAL.length - Object.keys(kuisAnswers).length;
 
-      // Update nav score
-      var navEl = document.getElementById('kuisNavScore');
-      if(navEl) navEl.textContent = kuisScore + ' ⭐';
-      var scoreEls = document.querySelectorAll('.nav-score');
-      for(var i=0;i<scoreEls.length;i++) scoreEls[i].textContent = kuisScore + ' ⭐';
+      // Update progress dots
+      updateProgressDots();
+
+      // Update nav score via global system
+      if(typeof updateNavbarScore === 'function') updateNavbarScore();
 
       // Show submit button when all answered
       if(Object.keys(kuisAnswers).length === KUIS_SOAL.length){
@@ -165,32 +190,13 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
 
     window.submitKuis = function(){
       var skor = Math.round((kuisCorrect / KUIS_SOAL.length) * 100);
+      // Store quiz result globally so hasil screen can read it
+      window._kuisResult = { skor: skor, correct: kuisCorrect, wrong: kuisWrong, total: KUIS_SOAL.length };
       // Navigate to hasil screen if it exists, otherwise show inline result
       var hasilScreen = document.getElementById('s-hasil');
       if(hasilScreen){
-        // Update hasil screen elements
+        // Navigate — hasil screenActivate will call animateScore which reads _kuisResult
         goScreen('s-hasil');
-        var hc = document.getElementById('hasilCircle');
-        if(hc) hc.style.setProperty('--prog', skor + '%');
-        var numEl = document.getElementById('hasilNum');
-        if(numEl) numEl.textContent = skor;
-        var lv = document.getElementById('hasilLevel');
-        if(lv){
-          if(skor >= 85){
-            lv.textContent = '🌟 Sangat Baik!';
-            lv.style.cssText = 'background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:var(--g);padding:10px 20px;border-radius:12px;display:inline-block';
-          } else if(skor >= 70){
-            lv.textContent = '👍 Baik';
-            lv.style.cssText = 'background:rgba(249,193,46,.1);border:1px solid rgba(249,193,46,.3);color:var(--y);padding:10px 20px;border-radius:12px;display:inline-block';
-          } else {
-            lv.textContent = '💪 Perlu Latihan';
-            lv.style.cssText = 'background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--r);padding:10px 20px;border-radius:12px;display:inline-block';
-          }
-        }
-        if(skor >= 70){
-          // Trigger confetti
-          if(typeof launchConfetti === 'function') launchConfetti();
-        }
       } else {
         // No hasil screen — show inline result
         var container = document.getElementById('kuisContainer');
@@ -212,7 +218,16 @@ export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
         }
       }
     };
+
+    // Initialize progress dots
+    updateProgressDots();
   })();
   </script>
+  <style>
+    .puzzle-prog{display:flex;gap:5px;margin:10px 0 6px;}
+    .puzzle-dot{width:22px;height:5px;border-radius:99px;background:rgba(255,255,255,.1);transition:background .3s;}
+    .puzzle-dot.done{background:var(--g);}
+    .puzzle-dot.cur{background:var(--y);}
+  </style>
 </div>`;
 }

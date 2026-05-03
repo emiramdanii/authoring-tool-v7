@@ -225,6 +225,28 @@ export function renderNavbarCSS(): string {
 </style>`;
 }
 
+// ── Shared Navbar HTML Generator ──────────────────────────────
+/**
+ * Generate the single shared navbar HTML that sits at the top of the
+ * assembled HTML document, right after `<body>`. This replaces the
+ * per-screen duplicate navbars that were previously embedded inside
+ * each screen template.
+ *
+ * The navbar is hidden initially (display:none) and shown/hidden
+ * dynamically by the goScreen() function in base-js.ts.
+ *
+ * @param logoText - Text to display in the nav-logo span (e.g. '📚 MPI')
+ * @returns HTML string for the shared `<nav>` element
+ */
+export function renderSharedNavbarHTML(logoText: string = '📚 MPI'): string {
+  return `<nav class="navbar" id="navbar" style="display:none">
+  <span class="nav-logo" id="navLogo">${esc(logoText)}</span>
+  <div class="nav-prog"><div class="nav-prog-fill" id="progFill" style="width:0%"></div></div>
+  <span class="nav-scene" id="navScene"></span>
+  <span class="nav-score">🌟 <span id="navScore">0</span></span>
+</nav>`;
+}
+
 // ── Default Config Helper ─────────────────────────────────────
 /**
  * Create a NavbarConfig with sensible defaults.

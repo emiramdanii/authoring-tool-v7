@@ -1,6 +1,15 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import { useAuthoringStore } from '@/store/authoring-store';
+import { useCanvaStore } from '@/store/canva-store';
+import { autoBuildScreens, type AuthoringData } from '@/lib/templates/auto-build';
+import { autoBuildConfig } from '@/lib/templates/auto-build';
+import { assembleHTML } from '@/lib/templates/assembly';
+import { getPageTemplateData } from '@/lib/templates/canva-bridge';
+import type { TemplateId } from '@/lib/templates/engine/slot-types';
+import type { PageTemplateType } from '@/components/canva/types';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const meta = useAuthoringStore((s) => s.meta);
@@ -11,12 +20,17 @@ export default function Dashboard() {
   const modules = useAuthoringStore((s) => s.modules);
   const games = useAuthoringStore((s) => s.games);
   const materi = useAuthoringStore((s) => s.materi);
+  const skenario = useAuthoringStore((s) => s.skenario);
+  const cp = useAuthoringStore((s) => s.cp);
   const activePreset = useAuthoringStore((s) => s.activePreset);
   const calcCompleteness = useAuthoringStore((s) => s.calcCompleteness);
   const applyFullPreset = useAuthoringStore((s) => s.applyFullPreset);
   const setActivePanel = useAuthoringStore((s) => s.setActivePanel);
   const newProject = useAuthoringStore((s) => s.newProject);
   const saveToStorage = useAuthoringStore((s) => s.saveToStorage);
+
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [buildResult, setBuildResult] = useState<{ screens: number; types: string[] } | null>(null);
 
   const completeness = calcCompleteness();
   const isPresetMode = activePreset !== null;
@@ -40,6 +54,106 @@ export default function Dashboard() {
     { label: 'Kuis (min 5 soal)', done: kuis.length >= 5 },
     { label: 'Modul konten (min 1)', done: modules.length > 0 },
   ];
+
+  // ── One-Click Build: data → templates → canva pages ──────────
+  const handleOneClickBuild = useCallback(() => {
+    setIsBuilding(true);
+    try {
+      const s = useAuthoringStore.getState();
+      const authoringData: AuthoringData = {
+        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
+        skenario: s.skenario, kuis: s.kuis, modules: s.modules,
+        games: s.games, materi: s.materi,
+      };
+
+      // Step 1: Auto-build screens from data
+      const screens = autoBuildScreens(authoringData);
+      const types = [...new Set(screens.map((s) => s.templateId))];
+
+      // Step 2: Create canva pages from screens
+      const authoringSnapshot: Record<string, unknown> = {
+        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
+        skenario: s.skenario, kuis: s.kuis, modules: s.modules,
+        games: s.games, materi: s.materi,
+      };
+
+      const labelMap: Record<string, string> = {
+        cover: 'Cover', dokumen: 'Dokumen CP/TP/ATP', tujuan: 'Tujuan Pembelajaran',
+        review: 'Review', 'materi-tabicons': 'Materi (Tab)', 'materi-accordion': 'Materi (Accordion)',
+        'diskusi-timer': 'Diskusi + Timer', 'sortir-game': 'Game Sortir',
+        'roda-game': 'Game Roda', 'hubungan-konsep': 'Hubungan Konsep',
+        flashcard: 'Flashcard', hasil: 'Hasil', refleksi: 'Refleksi',
+        penutup: 'Penutup', kuis: 'Kuis', skenario: 'Skenario',
+      };
+
+      const canvaPages = screens.map((screen) => ({
+        id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        label: labelMap[screen.templateId] || screen.templateId,
+        bgDataUrl: null as string | null,
+        bgColor: screen.templateId === 'cover' ? '#0f172a' : '#0f172a',
+        overlay: 20,
+        elements: [],
+        templateType: screen.templateId as PageTemplateType,
+        colorPalette: null,
+        navConfig: {
+          showNavbar: true, showPrevNext: true, showScore: true,
+          showProgress: true, navbarStyle: 'colorful' as const,
+        },
+        templateData: getPageTemplateData(
+          screen.templateId, authoringSnapshot,
+        ) as unknown as Record<string, unknown>,
+      }));
+
+      // Step 3: Set canva pages
+      useCanvaStore.setState({
+        pages: canvaPages,
+        currentPageIndex: 0,
+        selectedElId: null,
+      });
+
+      setBuildResult({ screens: screens.length, types });
+      toast.success(`🏗️ Build sukses! ${screens.length} halaman dari ${types.length} jenis template`);
+
+      // Step 4: Switch to canva
+      setTimeout(() => {
+        setActivePanel('canva');
+      }, 800);
+    } catch (err) {
+      console.error('Build failed:', err);
+      toast.error('❌ Build gagal: ' + (err as Error).message);
+    } finally {
+      setIsBuilding(false);
+    }
+  }, [setActivePanel]);
+
+  // ── Build & Preview: data → templates → HTML → new tab ──────
+  const handleBuildAndPreview = useCallback(() => {
+    setIsBuilding(true);
+    try {
+      const s = useAuthoringStore.getState();
+      const authoringData: AuthoringData = {
+        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
+        skenario: s.skenario, kuis: s.kuis, modules: s.modules,
+        games: s.games, materi: s.materi,
+      };
+
+      const config = autoBuildConfig(authoringData);
+      const html = assembleHTML(config);
+
+      // Open in new tab
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+      toast.success(`📱 Preview dibuka! ${config.screens.length} halaman`);
+    } catch (err) {
+      console.error('Preview failed:', err);
+      toast.error('❌ Preview gagal: ' + (err as Error).message);
+    } finally {
+      setIsBuilding(false);
+    }
+  }, []);
 
   const exportJSON = () => {
     const s = useAuthoringStore.getState();
@@ -136,6 +250,92 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ══ ONE-CLICK BUILD — The main action ══════════════════ */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-cyan-500/10 border border-amber-500/30 rounded-xl p-5 relative overflow-hidden">
+        {/* Decorative glow */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base font-bold text-amber-400">🏗️ One-Click Build</h3>
+            <span className="text-[0.6rem] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-bold">OTOMATIS</span>
+          </div>
+          <p className="text-xs text-zinc-400 mb-4">
+            Isi data di panel Dokumen & Konten, lalu klik <strong className="text-amber-300">Build Sekali Klik</strong> — sistem otomatis memilih template, mengisi slot data, dan menyusun halaman di Canva.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {/* Build to Canva */}
+            <button
+              onClick={handleOneClickBuild}
+              disabled={isBuilding || completeness < 10}
+              className={`relative px-5 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                isBuilding
+                  ? 'bg-amber-500/20 text-amber-300 cursor-wait'
+                  : completeness < 10
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-500/20'
+              }`}
+            >
+              {isBuilding ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Building...
+                </>
+              ) : (
+                <>🏗️ Build → Canva</>
+              )}
+            </button>
+
+            {/* Build & Preview */}
+            <button
+              onClick={handleBuildAndPreview}
+              disabled={isBuilding || completeness < 10}
+              className={`relative px-5 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                isBuilding
+                  ? 'bg-emerald-500/20 text-emerald-300 cursor-wait'
+                  : completeness < 10
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20'
+              }`}
+            >
+              {isBuilding ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Building...
+                </>
+              ) : (
+                <>📱 Build & Preview</>
+              )}
+            </button>
+          </div>
+
+          {/* Build result */}
+          {buildResult && (
+            <div className="bg-black/30 border border-amber-500/20 rounded-lg p-3 text-xs text-zinc-300">
+              <strong className="text-amber-400">✅ Build terakhir:</strong> {buildResult.screens} halaman — {buildResult.types.map(t => {
+                const nameMap: Record<string, string> = {
+                  cover: 'Cover', dokumen: 'Dokumen', tujuan: 'Tujuan', review: 'Review',
+                  'materi-tabicons': 'Materi Tab', 'materi-accordion': 'Materi Accordion',
+                  'diskusi-timer': 'Diskusi', 'sortir-game': 'Sortir', 'roda-game': 'Roda',
+                  'hubungan-konsep': 'Konsep', flashcard: 'Flashcard', hasil: 'Hasil',
+                  refleksi: 'Refleksi', penutup: 'Penutup', kuis: 'Kuis', skenario: 'Skenario',
+                };
+                return nameMap[t] || t;
+              }).join(' → ')}
+            </div>
+          )}
+
+          {/* Completion hint */}
+          {completeness < 30 && (
+            <div className="mt-3 text-xs text-amber-500/70">
+              💡 Isi minimal Judul & Kelas di panel Dokumen untuk memulai build
+            </div>
+          )}
         </div>
       </div>
 

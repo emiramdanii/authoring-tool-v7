@@ -5,7 +5,7 @@ import { useCanvaStore } from '@/store/canva-store';
 import type { CanvaElement, ResizeDir } from './types';
 import QuizWidget from './QuizWidget';
 import GameWidget from './GameWidget';
-import PageTemplate from './PageTemplate';
+import TemplatePreview from './TemplatePreview';
 
 export default function Stage({ onMouseMove }: { onMouseMove: (x: number, y: number) => void }) {
   const {
@@ -205,12 +205,12 @@ export default function Stage({ onMouseMove }: { onMouseMove: (x: number, y: num
             style={{ background: `rgba(14,28,47,${(page.overlay || 20) / 100})` }}
           />
 
-          {/* Template Mode: Render full-page template */}
+          {/* Template Mode: Render using assembly pipeline (identical to export) */}
           {isTemplateMode && (
-            <PageTemplate
-              page={page}
-              isSelected={true}
-              onEditField={handleTemplateEdit}
+            <TemplatePreview
+              templateType={page.templateType}
+              templateData={page.templateData}
+              colorPalette={page.colorPalette}
             />
           )}
 

@@ -19,6 +19,11 @@ import {
 } from '@/components/canva/types';
 import { useAuthoringStore } from '@/store/authoring-store';
 import { extractColorPalette } from '@/lib/color-palette';
+import { autoBuildScreens, autoBuildConfig, type AuthoringData } from '@/lib/templates/auto-build';
+import { assembleHTML, assembleSingleScreen, type AssemblyScreen } from '@/lib/templates/assembly';
+import { getPageTemplateData } from '@/lib/templates/canva-bridge';
+import { renderTemplateHTML } from '@/lib/template-registry';
+import type { TemplateId, ScreenSlotData } from '@/lib/templates/engine/slot-types';
 
 function createPage(label: string, templateType: PageTemplateType = 'custom'): CanvaPage {
   return {
@@ -136,6 +141,7 @@ interface CanvaState {
   // ── Export helpers ───────────────────────────────────────────
   exportPageHTML: (pageIdx?: number) => string;
   exportSlideshowHTML: () => string;
+  exportFullHTML: () => string;
 }
 
 export const useCanvaStore = create<CanvaState>((set, get) => ({
@@ -226,93 +232,82 @@ export const useCanvaStore = create<CanvaState>((set, get) => ({
     const authStore = useAuthoringStore.getState();
     const meta = authStore.meta;
 
-    // Generate page label based on template type
+    // Generate page label based on template type (all 16 + legacy)
     const labelMap: Record<string, string> = {
       cover: 'Cover - ' + (meta.judulPertemuan || 'Halaman Judul'),
       dokumen: 'Dokumen CP/TP/ATP',
-      materi: 'Materi Pembelajaran',
-      kuis: 'Kuis Interaktif',
-      game: 'Game Interaktif',
+      tujuan: 'Tujuan Pembelajaran',
+      review: 'Review Materi',
+      'materi-tabicons': 'Materi (Tab Icons)',
+      'materi-accordion': 'Materi (Accordion)',
+      'diskusi-timer': 'Diskusi + Timer',
+      'sortir-game': 'Game Sortir',
+      'roda-game': 'Game Roda',
+      'hubungan-konsep': 'Hubungan Konsep',
+      flashcard: 'Flashcard',
       hasil: 'Hasil & Apresiasi',
-      hero: 'Hero Banner',
+      refleksi: 'Refleksi',
+      penutup: 'Penutup',
+      kuis: 'Kuis Interaktif',
       skenario: 'Skenario Interaktif',
+      // Legacy
+      materi: 'Materi Pembelajaran',
+      game: 'Game Interaktif',
+      hero: 'Hero Banner',
       custom: 'Halaman ' + (pages.length + 1),
     };
 
     const newPage = createPage(labelMap[templateType] || 'Halaman ' + (pages.length + 1), templateType);
 
-    // Pre-fill template data from authoring store
-    switch (templateType) {
-      case 'cover':
-        newPage.templateData = {
-          title: meta.judulPertemuan || 'Judul Pertemuan',
-          subtitle: meta.subjudul || 'Subjudul',
-          icon: meta.ikon || '📚',
-          mapel: meta.mapel || '',
-          kelas: meta.kelas || '',
-          namaBab: meta.namaBab || '',
-        };
-        newPage.bgColor = '#0f172a';
-        break;
+    // Use the canva-bridge to fill template data for all 16 types
+    const authoringSnapshot: Record<string, unknown> = {
+      meta: authStore.meta,
+      cp: authStore.cp,
+      tp: authStore.tp,
+      atp: authStore.atp,
+      alur: authStore.alur,
+      skenario: authStore.skenario,
+      kuis: authStore.kuis,
+      modules: authStore.modules,
+      games: authStore.games,
+      materi: authStore.materi,
+    };
 
-      case 'dokumen':
-        newPage.templateData = {
-          cp: authStore.cp,
-          tp: authStore.tp,
-          atp: authStore.atp,
-        };
-        break;
+    // Map templateType to TemplateId for the bridge
+    const templateIdMap: Record<string, string> = {
+      cover: 'cover',
+      dokumen: 'dokumen',
+      tujuan: 'tujuan',
+      review: 'review',
+      'materi-tabicons': 'materi-tabicons',
+      'materi-accordion': 'materi-accordion',
+      'diskusi-timer': 'diskusi-timer',
+      'sortir-game': 'sortir-game',
+      'roda-game': 'roda-game',
+      'hubungan-konsep': 'hubungan-konsep',
+      flashcard: 'flashcard',
+      hasil: 'hasil',
+      refleksi: 'refleksi',
+      penutup: 'penutup',
+      kuis: 'kuis',
+      skenario: 'skenario',
+      // Legacy → new mapping
+      materi: 'materi-tabicons',
+      game: 'sortir-game',
+      hero: 'cover',
+    };
 
-      case 'materi':
-        newPage.templateData = {
-          blok: authStore.materi.blok,
-          modules: authStore.modules.filter((m: Record<string, unknown>) =>
-            ['materi', 'infografis', 'accordion', 'tab-icons', 'icon-explore', 'timeline'].includes(m.type as string)
-          ),
-        };
-        break;
+    const templateId = templateIdMap[templateType];
+    if (templateId) {
+      newPage.templateData = getPageTemplateData(
+        templateId as TemplateId,
+        authoringSnapshot,
+      ) as unknown as Record<string, unknown>;
+    }
 
-      case 'kuis':
-        newPage.templateData = {
-          kuis: authStore.kuis.filter(k => k.q.trim()),
-        };
-        break;
-
-      case 'game': {
-        const GAME_TYPES = ['truefalse', 'memory', 'matching', 'roda', 'sorting', 'spinwheel', 'teambuzzer', 'wordsearch', 'flashcard'];
-        newPage.templateData = {
-          games: authStore.modules.filter((m: Record<string, unknown>) =>
-            GAME_TYPES.includes(m.type as string)
-          ),
-        };
-        break;
-      }
-
-      case 'hasil':
-        newPage.templateData = {
-          totalKuis: authStore.kuis.filter(k => k.q.trim()).length,
-          namaBab: meta.namaBab || '',
-        };
-        break;
-
-      case 'skenario':
-        newPage.templateData = {
-          skenario: authStore.skenario,
-        };
-        break;
-
-      case 'hero': {
-        const heroModules = authStore.modules.filter((m: Record<string, unknown>) => m.type === 'hero');
-        const heroData = heroModules[0] as Record<string, unknown> | undefined;
-        newPage.templateData = {
-          title: (heroData?.title as string) || meta.judulPertemuan || 'Hero Banner',
-          subtitle: (heroData?.subjudul as string) || meta.subjudul || '',
-          icon: (heroData?.icon as string) || meta.ikon || '🚀',
-          gradient: (heroData?.gradient as string) || 'sunset',
-          cta: (heroData?.cta as string) || '',
-        };
-        break;
-      }
+    // Set background color for cover/hero
+    if (templateType === 'cover' || templateType === 'hero') {
+      newPage.bgColor = '#0f172a';
     }
 
     // Auto-fill elements for template (compatible with export)
@@ -669,78 +664,75 @@ export const useCanvaStore = create<CanvaState>((set, get) => ({
   // ── Auto Rakit ───────────────────────────────────────────────
   autoRakit: () => {
     const authStore = useAuthoringStore.getState();
-    const meta = authStore.meta;
-    const kuis = authStore.kuis.filter(k => k.q.trim());
-    const GAME_TYPES = ['truefalse','memory','matching','roda','sorting','spinwheel','teambuzzer','wordsearch','flashcard'];
-    const games = authStore.modules.filter((m: Record<string, unknown>) => GAME_TYPES.includes(m.type as string));
-    const materiModules = authStore.modules.filter((m: Record<string, unknown>) =>
-      ['materi', 'infografis', 'accordion', 'tab-icons', 'icon-explore', 'timeline', 'hero', 'kutipan', 'langkah', 'statistik'].includes(m.type as string)
-    );
 
-    const newPages: CanvaPage[] = [];
-
-    // 1. Cover page
-    newPages.push(createPage('Cover - ' + (meta.judulPertemuan || 'Judul'), 'cover'));
-    newPages[newPages.length - 1].templateData = {
-      title: meta.judulPertemuan || 'Judul Pertemuan',
-      subtitle: meta.subjudul || 'Subjudul',
-      icon: meta.ikon || '📚',
-      mapel: meta.mapel || '',
-      kelas: meta.kelas || '',
-      namaBab: meta.namaBab || '',
+    // Build authoring data in the format expected by autoBuildScreens
+    const authoringData: AuthoringData = {
+      meta: authStore.meta,
+      cp: authStore.cp,
+      tp: authStore.tp,
+      atp: authStore.atp,
+      alur: authStore.alur,
+      skenario: authStore.skenario,
+      kuis: authStore.kuis,
+      modules: authStore.modules,
+      games: authStore.games,
+      materi: authStore.materi,
     };
-    newPages[newPages.length - 1].bgColor = '#0f172a';
-    populateTemplateElements(newPages[newPages.length - 1]);
 
-    // 2. Dokumen page (if CP/TP data exists)
-    if (authStore.cp.capaianFase || authStore.tp.length > 0) {
-      newPages.push(createPage('Dokumen CP/TP/ATP', 'dokumen'));
-      newPages[newPages.length - 1].templateData = {
-        cp: authStore.cp,
-        tp: authStore.tp,
-        atp: authStore.atp,
-      };
-      populateTemplateElements(newPages[newPages.length - 1]);
-    }
-
-    // 3. Skenario page (if skenario data exists)
-    if (authStore.skenario.length > 0) {
-      newPages.push(createPage('Skenario Interaktif', 'skenario'));
-      newPages[newPages.length - 1].templateData = { skenario: authStore.skenario };
-      populateTemplateElements(newPages[newPages.length - 1]);
-    }
-
-    // 4. Materi pages
-    if (materiModules.length > 0 || authStore.materi.blok.length > 0) {
-      newPages.push(createPage('Materi Pembelajaran', 'materi'));
-      newPages[newPages.length - 1].templateData = {
-        blok: authStore.materi.blok,
-        modules: materiModules,
-      };
-      populateTemplateElements(newPages[newPages.length - 1]);
-    }
-
-    // 5. Kuis page
-    if (kuis.length > 0) {
-      newPages.push(createPage('Kuis Interaktif', 'kuis'));
-      newPages[newPages.length - 1].templateData = { kuis };
-      populateTemplateElements(newPages[newPages.length - 1]);
-    }
-
-    // 6. Game pages
-    if (games.length > 0) {
-      newPages.push(createPage('Game Interaktif', 'game'));
-      newPages[newPages.length - 1].templateData = { games };
-      populateTemplateElements(newPages[newPages.length - 1]);
-    }
-
-    // 7. Hasil page
-    newPages.push(createPage('Hasil & Apresiasi', 'hasil'));
-    newPages[newPages.length - 1].templateData = {
-      totalKuis: kuis.length,
-      namaBab: meta.namaBab || '',
+    // Use the new autoBuildScreens pipeline (14-step conditional)
+    const screens = autoBuildScreens(authoringData);
+    const authoringSnapshot: Record<string, unknown> = {
+      meta: authStore.meta,
+      cp: authStore.cp,
+      tp: authStore.tp,
+      atp: authStore.atp,
+      alur: authStore.alur,
+      skenario: authStore.skenario,
+      kuis: authStore.kuis,
+      modules: authStore.modules,
+      games: authStore.games,
+      materi: authStore.materi,
     };
-    populateTemplateElements(newPages[newPages.length - 1]);
+
+    const newPages: CanvaPage[] = screens.map((screen) => {
+      // Map templateId to PageTemplateType (they're mostly the same, but ensure legacy compat)
+      const templateType = screen.templateId as PageTemplateType;
+
+      // Generate label from template type
+      const labelMap: Record<string, string> = {
+        cover: 'Cover - ' + (authStore.meta.judulPertemuan || 'Halaman Judul'),
+        dokumen: 'Dokumen CP/TP/ATP',
+        tujuan: 'Tujuan Pembelajaran',
+        review: 'Review Materi',
+        'materi-tabicons': 'Materi (Tab Icons)',
+        'materi-accordion': 'Materi (Accordion)',
+        skenario: 'Skenario Interaktif',
+        kuis: 'Kuis Interaktif',
+        'diskusi-timer': 'Diskusi + Timer',
+        'sortir-game': 'Game Sortir',
+        'roda-game': 'Game Roda',
+        'hubungan-konsep': 'Hubungan Konsep',
+        flashcard: 'Flashcard',
+        hasil: 'Hasil & Apresiasi',
+        refleksi: 'Refleksi',
+        penutup: 'Penutup',
+      };
+
+      const page = createPage(labelMap[screen.templateId] || screen.templateId, templateType);
+
+      // Fill templateData using the canva-bridge getPageTemplateData
+      page.templateData = getPageTemplateData(
+        screen.templateId,
+        authoringSnapshot,
+      ) as unknown as Record<string, unknown>;
+
+      // Set background color for cover
+      if (screen.templateId === 'cover') {
+        page.bgColor = '#0f172a';
+      }
+
+      return page;
+    });
 
     // If no pages were created (very unlikely), add at least one custom
     if (newPages.length === 0) {
@@ -801,31 +793,47 @@ export const useCanvaStore = create<CanvaState>((set, get) => ({
 
   // ── Export ───────────────────────────────────────────────────
   exportPageHTML: (pageIdx) => {
-    const { pages, ratioId } = get();
+    const { pages } = get();
     const idx = pageIdx ?? get().currentPageIndex;
     const page = pages[idx];
     if (!page) return '';
-    const ratio = RATIOS.find(r => r.id === ratioId) || RATIOS[0];
+
+    // ── For template pages, use the assembly pipeline ────────────
+    const knownTemplateTypes: string[] = [
+      'cover', 'petunjuk', 'dokumen', 'tujuan', 'review',
+      'materi-tabicons', 'materi-accordion', 'diskusi-timer',
+      'sortir-game', 'roda-game', 'hubungan-konsep',
+      'flashcard', 'kuis', 'skenario',
+      'hasil', 'refleksi', 'penutup',
+    ];
+
+    if (knownTemplateTypes.includes(page.templateType)) {
+      try {
+        const templateId = page.templateType as TemplateId;
+        const slotData = { ...page.templateData, _templateId: templateId } as unknown as ScreenSlotData;
+        return assembleSingleScreen(templateId, slotData);
+      } catch (e) {
+        console.warn('[CanvaExport] assembleSingleScreen failed, falling back:', e);
+      }
+    }
+
+    // ── Legacy fallback for custom/element-based pages ───────────
+    const ratio = RATIOS.find(r => r.id === get().ratioId) || RATIOS[0];
 
     const bgStyle = page.bgDataUrl
       ? `background-image:url('${page.bgDataUrl}');background-size:cover;background-position:center`
       : `background:${page.bgColor || '#1a1a2e'}`;
 
-    // CSS variables from color palette
     const paletteCSS = page.colorPalette?.mapping
       ? Object.entries(page.colorPalette.mapping).map(([k, v]) => `${k}:${v}`).join(';')
       : '';
 
-    // Get quiz data from authoring store for interactive export
     const allKuis = useAuthoringStore.getState().kuis.filter(k => k.q.trim());
     const allModules = useAuthoringStore.getState().modules;
     const kuisJSON = JSON.stringify(allKuis).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
     const modulesJSON = JSON.stringify(allModules).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
 
-    // Template-specific HTML
-    const templateBody = renderTemplateExportHTML(page);
-
-    const elementsHTML = templateBody || (page.elements || [])
+    const elementsHTML = (page.elements || [])
       .filter(el => !el.hidden)
       .map((el, i) => {
         const style = `position:absolute;left:${el.x}%;top:${el.y}%;width:${el.w}%;height:${el.h}%;opacity:${(el.opacity || 100) / 100}`;
@@ -871,7 +879,7 @@ const MODULES_DATA=${modulesJSON};
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 document.querySelectorAll('[id^=quiz_]').forEach(function(el){
   var soal=KUIS_DATA.filter(function(k){return k.q.trim()});
-  if(!soal.length){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(245,200,66,.5);font-size:12px">❓ Belum ada soal</div>';return}
+  if(!soal.length){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(245,200,66,.5);font-size:12px">Belum ada soal</div>';return}
   var cur=0,score=0,answered=false,selected=-1;
   var letters=['A','B','C','D'];
   function render(){
@@ -916,27 +924,8 @@ document.querySelectorAll('[id^=game_]').forEach(function(el){
   var gi=parseInt(el.getAttribute('data-game-idx'));
   var mod=(!isNaN(gi)&&gi>=0&&gi<MODULES_DATA.length)?MODULES_DATA[gi]:null;
   if(!mod){el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:rgba(56,217,217,.5);font-size:12px"><span style="font-size:28px">🎮</span><span style="margin-top:4px">Belum ada game</span></div>';return}
-  var t=mod.type;
-  var title=mod.title||t;
-  if(t==='truefalse'){
-    var soal=(mod.soal||[]).filter(function(s){return s.teks});
-    var ci=0,sc=0,ans=false,sel=null;
-    function render(){
-      if(ci>=soal.length){var p=Math.round(sc/soal.length*100);el.innerHTML='<div class="qresult"><div class="score" style="color:#3ecfcf">'+p+'%</div><div class="level" style="color:#3ecfcf">'+sc+'/'+soal.length+' benar</div><button onclick="this.parentNode.parentNode.__rs()">Ulangi</button></div>';return}
-      var q=soal[ci];var h='<div class="qhead"><span style="font-weight:700;color:#3ecfcf">Soal '+(ci+1)+'/'+soal.length+'</span><span style="color:#3ecfcf">Skor: '+sc+'</span></div>';
-      h+='<div class="qq" style="color:#e0f2fe">'+esc(q.teks)+'</div>';
-      h+='<div style="display:flex;gap:8px;margin-top:8px">';
-      h+='<button style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(52,211,153,.3);background:rgba(52,211,153,.15);color:#6ee7b7;font-size:13px;font-weight:700;cursor:pointer;'+(ans?(q.benar?'':'opacity:.3'):'')+'" '+(ans?'disabled':'')+' data-v="true">✅ Benar</button>';
-      h+='<button style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.15);color:#fca5a5;font-size:13px;font-weight:700;cursor:pointer;'+(ans?(!q.benar?'':'opacity:.3'):'')+'" '+(ans?'disabled':'')+' data-v="false">❌ Salah</button></div>';
-      el.innerHTML=h;
-      el.querySelectorAll('button[data-v]').forEach(function(b){b.addEventListener('click',function(){if(ans)return;sel=this.getAttribute('data-v')==='true';ans=true;if(sel===(q.benar===true))sc++;render();setTimeout(function(){ci++;ans=false;sel=null;render()},1200)})});
-    }
-    el.__rs=function(){ci=0;sc=0;ans=false;sel=null;render()};render();
-  } else {
-    var icons={roda:'🎡',memory:'🧠',matching:'🔀',sorting:'🔢',spinwheel:'🎡',teambuzzer:'🏆',wordsearch:'🔍',flashcard:'🃏'};
-    var labels={roda:'Roda Putar',memory:'Memory Match',matching:'Pasangkan',sorting:'Klasifikasi',spinwheel:'Roda Pertanyaan',teambuzzer:'Kuis Tim',wordsearch:'Teka-Teki Kata',flashcard:'Flashcard'};
-    el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><span style="font-size:28px">'+(icons[t]||'🎮')+'</span><div style="font-size:13px;font-weight:700;color:#3ecfcf;margin-top:4px">'+(labels[t]||title)+'</div><div style="font-size:10px;color:rgba(56,217,217,.5);margin-top:2px">'+(title||'Game Interaktif')+'</div></div>';
-  }
+  var t=mod.type;var title=mod.title||t;
+  el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><span style="font-size:28px">🎮</span><div style="font-size:13px;font-weight:700;color:#3ecfcf;margin-top:4px">'+(title||'Game Interaktif')+'</div></div>';
 });
 <\/script></body></html>`;
   },
@@ -956,6 +945,144 @@ ${slidesHtml}
 <div class="nav"><button onclick="prevSlide()">← Prev</button><button onclick="nextSlide()">Next →</button></div>
 <div class="slide-num" id="slideNum">1/${pages.length}</div>
 <script>let cur=0;const total=${pages.length};const slides=document.querySelectorAll('.slide');function showSlide(n){slides.forEach((s,i)=>s.style.display=i===n?'block':'none');document.getElementById('slideNum').textContent=(n+1)+'/'+total}function nextSlide(){cur=(cur+1)%total;showSlide(cur)}function prevSlide(){cur=(cur-1+total)%total;showSlide(cur)}document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')nextSlide();if(e.key==='ArrowLeft')prevSlide()});<\/script></body></html>`;
+  },
+
+  // ── Export Full HTML — uses assembly.ts pipeline ──────────────────
+  // Generates a SINGLE standalone HTML file with ALL pages,
+  // navigation, scoring, transitions, confetti — identical to
+  // what the student will see. This is "Langkah 4: EXPORT".
+  // Uses CURRENT canva pages (respects user edits/reorder) for
+  // template pages, falls back to authoring data rebuild if needed.
+  exportFullHTML: () => {
+    const { pages } = get();
+
+    try {
+      // ── Build AssemblyScreen[] from current canva pages ──────────
+      const knownTemplateTypes: string[] = [
+        'cover', 'petunjuk', 'dokumen', 'tujuan', 'review',
+        'materi-tabicons', 'materi-accordion', 'diskusi-timer',
+        'sortir-game', 'roda-game', 'hubungan-konsep',
+        'flashcard', 'kuis', 'skenario',
+        'hasil', 'refleksi', 'penutup',
+      ];
+
+      // Check if we have any template-based pages (vs only custom/legacy)
+      const hasTemplatePages = pages.some(p => knownTemplateTypes.includes(p.templateType));
+
+      if (hasTemplatePages) {
+        // Build screens from canva pages (respects user edits & reorder)
+        const screens: AssemblyScreen[] = [];
+        let screenCounter = 0;
+
+        for (const page of pages) {
+          const templateId = page.templateType as TemplateId;
+
+          if (knownTemplateTypes.includes(page.templateType)) {
+            // Template page — use templateData from canva page
+            const slotData = { ...page.templateData, _templateId: templateId } as unknown as ScreenSlotData;
+            screenCounter++;
+            screens.push({
+              id: `s-${templateId}-${screenCounter}`,
+              templateId,
+              data: slotData,
+            });
+          } else if (page.templateType === 'custom' || page.templateType === 'hero' || page.templateType === 'materi' || page.templateType === 'game') {
+            // Legacy/custom page — rebuild from authoring data for this slot
+            // Skip in the template-based export; these will need manual conversion
+            // For now, use cover as fallback for hero, materi-tabicons for materi, etc.
+            const fallbackMap: Record<string, TemplateId> = {
+              hero: 'cover',
+              materi: 'materi-tabicons',
+              game: 'sortir-game',
+            };
+            const fallbackId = fallbackMap[page.templateType] || 'cover';
+            const authStore = useAuthoringStore.getState();
+            const authoringSnapshot: Record<string, unknown> = {
+              meta: authStore.meta,
+              cp: authStore.cp,
+              tp: authStore.tp,
+              atp: authStore.atp,
+              alur: authStore.alur,
+              skenario: authStore.skenario,
+              kuis: authStore.kuis,
+              modules: authStore.modules,
+              games: authStore.games,
+              materi: authStore.materi,
+            };
+            const slotData = getPageTemplateData(fallbackId, authoringSnapshot);
+            screenCounter++;
+            screens.push({
+              id: `s-${fallbackId}-${screenCounter}`,
+              templateId: fallbackId,
+              data: slotData,
+            });
+          }
+        }
+
+        if (screens.length === 0) {
+          // Fallback to auto-build
+          const authStore = useAuthoringStore.getState();
+          const authoringData: AuthoringData = {
+            meta: authStore.meta,
+            cp: authStore.cp,
+            tp: authStore.tp,
+            atp: authStore.atp,
+            alur: authStore.alur,
+            skenario: authStore.skenario,
+            kuis: authStore.kuis,
+            modules: authStore.modules,
+            games: authStore.games,
+            materi: authStore.materi,
+            pertemuanKe: 1,
+          };
+          const config = autoBuildConfig(authoringData);
+          return assembleHTML(config);
+        }
+
+        // Get title from first page or authoring store
+        const authStore = useAuthoringStore.getState();
+        const title = authStore.meta.judulPertemuan || authStore.meta.namaBab || 'Media Pembelajaran Interaktif';
+
+        // Determine accent color
+        const pertemuanKe = authStore.meta.pertemuanKe || 1;
+        const accentHexMap: Record<string, string> = {
+          '--y': '#f9c12e', '--c': '#3ecfcf', '--g': '#34d399',
+          '--p': '#a78bfa', '--o': '#fb923c', '--r': '#ff6b6b',
+        };
+        const accentVars: Record<number, string> = {
+          1: '--y', 2: '--c', 3: '--g', 4: '--p', 5: '--o', 6: '--r',
+        };
+        const accentVar = accentVars[pertemuanKe] || '--y';
+
+        return assembleHTML({
+          title,
+          screens,
+          cssVars: { '--y': accentHexMap[accentVar] || '#f9c12e' },
+          includeConfetti: true,
+        });
+      }
+
+      // ── No template pages — use auto-build pipeline ────────────
+      const authStore = useAuthoringStore.getState();
+      const authoringData: AuthoringData = {
+        meta: authStore.meta,
+        cp: authStore.cp,
+        tp: authStore.tp,
+        atp: authStore.atp,
+        alur: authStore.alur,
+        skenario: authStore.skenario,
+        kuis: authStore.kuis,
+        modules: authStore.modules,
+        games: authStore.games,
+        materi: authStore.materi,
+        pertemuanKe: 1,
+      };
+      const config = autoBuildConfig(authoringData);
+      return assembleHTML(config);
+    } catch (err) {
+      console.error('exportFullHTML failed:', err);
+      return '<!DOCTYPE html><html><body><p>Error generating HTML export. Check console for details.</p></body></html>';
+    }
   },
 }));
 
@@ -984,6 +1111,39 @@ function populateTemplateElements(page: CanvaPage) {
 
 function renderTemplateExportHTML(page: CanvaPage): string | null {
   const td = page.templateData;
+
+  // For new 16-type templates, use the assembly pipeline's renderTemplateHTML
+  const newTemplateTypes: string[] = [
+    'cover', 'dokumen', 'tujuan', 'review',
+    'materi-tabicons', 'materi-accordion', 'diskusi-timer',
+    'sortir-game', 'roda-game', 'hubungan-konsep',
+    'flashcard', 'hasil', 'refleksi', 'penutup',
+    'kuis', 'skenario',
+  ];
+
+  if (newTemplateTypes.includes(page.templateType)) {
+    try {
+      // Import the render function from template registry
+      // We use dynamic require to avoid circular imports at module level
+      const { renderTemplateHTML } = require('@/lib/template-registry');
+      const { createDefaultSlotData } = require('@/lib/templates/engine/slot-types');
+      const templateId = page.templateType as import('@/lib/templates/engine/slot-types').TemplateId;
+
+      // Use templateData as slot data (with _templateId field)
+      let slotData = td as Record<string, unknown>;
+      if (!slotData._templateId) {
+        slotData = { ...slotData, _templateId: templateId };
+      }
+
+      const html = renderTemplateHTML(templateId, slotData as import('@/lib/templates/engine/slot-types').ScreenSlotData, 's-export');
+      // Wrap in slide-compatible container
+      return `<div style="position:absolute;inset:0;overflow:auto">${html.replace('class="screen"', 'style="min-height:100%;padding:20px"')}</div>`;
+    } catch (e) {
+      console.warn('[CanvaExport] Failed to render template, falling back:', e);
+    }
+  }
+
+  // Legacy template types — use simple HTML
   const esc = (s: unknown) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   switch (page.templateType) {

@@ -17,6 +17,7 @@ export interface CSSVars {
   '--p': string;
   '--g': string;
   '--o': string;
+  '--accent': string;
   '--text': string;
   '--muted': string;
   '--rad': string;
@@ -34,6 +35,7 @@ const DEFAULT_VARS: CSSVars = {
   '--p': '#a78bfa',
   '--g': '#34d399',
   '--o': '#fb923c',
+  '--accent': '#f9c12e',
   '--text': '#e8f2ff',
   '--muted': '#6e90b5',
   '--rad': '16px',
@@ -80,6 +82,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .btn-y{background:var(--y);color:#0e1c2f;}
 .btn-c{background:var(--c);color:#0e1c2f;}
 .btn-g{background:var(--g);color:#0e1c2f;}
+.btn-p{background:var(--p);color:#fff;}
+.btn-r{background:var(--r);color:#fff;}
+.btn-o{background:var(--o);color:#0e1c2f;}
 .btn-ghost{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);}
 .btn-sm{padding:7px 15px;font-size:.78rem;}
 .btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;}
@@ -218,15 +223,114 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .hasil-circle::before{content:'';position:absolute;inset:10px;border-radius:50%;background:var(--bg2);}
 .hasil-score{position:relative;z-index:1;text-align:center;}
 
+/* ── Section chip ─────────────────────────────── */
+.chip-sc{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:.72rem;font-weight:800;margin-bottom:10px;}
+
+/* ── Petunjuk grid ────────────────────────────── */
+.pj-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:16px 0;}
+.pj-item{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:14px;text-align:center;}
+.pj-icon{font-size:1.9rem;margin-bottom:6px;}
+.pj-title{font-weight:800;font-size:.86rem;margin-bottom:3px;}
+.pj-body{font-size:.75rem;color:var(--muted);line-height:1.5;}
+
+/* ── Card grid (info cards) ───────────────────── */
+.nc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:13px 0;}
+.nc{border-radius:14px;padding:15px;border:1px solid rgba(255,255,255,.07);transition:transform .2s;}
+.nc:hover{transform:translateY(-3px);}
+.nc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.nc-icon{font-size:1.6rem;}
+.nc-title{font-weight:900;font-size:.9rem;}
+.nc-body{font-size:.8rem;color:var(--muted);line-height:1.55;}
+
+/* ── Diskusi kelompok banner ──────────────────── */
+.diskusi-kelompok{border-radius:13px;padding:13px 15px;margin:12px 0;display:flex;gap:12px;align-items:flex-start;}
+.diskusi-kelompok.tipe-1{background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.25);}
+.diskusi-kelompok.tipe-2{background:rgba(249,193,46,.07);border:1px solid rgba(249,193,46,.25);}
+.diskusi-kelompok.tipe-3{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);}
+.dk-ikon{font-size:1.8rem;flex-shrink:0;line-height:1;}
+.dk-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.dk-label.hijau{color:var(--g);}
+.dk-label.kuning{color:var(--y);}
+.dk-label.ungu{color:var(--p);}
+.dk-judul{font-weight:800;font-size:.88rem;margin-bottom:4px;line-height:1.4;}
+.dk-isi{font-size:.8rem;color:var(--muted);line-height:1.6;}
+
+/* ── Diskusi box (textarea + save) ────────────── */
+.diskusi-box{background:rgba(62,207,207,.07);border:1px solid rgba(62,207,207,.25);border-radius:13px;padding:16px;margin-top:12px;}
+.diskusi-box textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.86rem;resize:vertical;min-height:70px;margin-top:8px;}
+.diskusi-box textarea:focus{outline:2px solid var(--c);}
+.saved-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:.74rem;font-weight:800;background:rgba(52,211,153,.15);color:var(--g);border:1px solid rgba(52,211,153,.3);animation:fadeIn .3s ease;}
+
+/* ── Norma tabs ───────────────────────────────── */
+.norma-tabs{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap;}
+.ntab{padding:7px 14px;border-radius:99px;font-size:.78rem;font-weight:800;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);transition:all .2s;position:relative;}
+.ntab.active{color:#0e1c2f;border-color:transparent;}
+.ntab.read::after{content:'✓';position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--g);color:#0e1c2f;font-size:.6rem;display:flex;align-items:center;justify-content:center;font-weight:900;}
+.nk-card{border-radius:16px;padding:18px;animation:fadeIn .3s ease;}
+.nk-header{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.nk-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;}
+.nk-label{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;opacity:.7;}
+.nk-title{font-family:'Fredoka One',cursive;font-size:1.2rem;}
+.nk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.nk-box{border-radius:11px;padding:11px 13px;border:1px solid rgba(255,255,255,.08);}
+.nk-box-label{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;opacity:.7;}
+.nk-box-val{font-size:.82rem;line-height:1.6;}
+.nk-sanksi{border-radius:11px;padding:12px 14px;margin-top:10px;border:1px solid rgba(255,255,255,.1);}
+.nk-sanksi-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
+.nk-sanksi-item{display:flex;align-items:flex-start;gap:9px;font-size:.82rem;margin-bottom:5px;line-height:1.4;}
+.nk-sanksi-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.nk-contoh{font-size:.8rem;color:var(--muted);line-height:1.6;margin-top:8px;padding:10px 13px;background:rgba(255,255,255,.04);border-radius:9px;}
+.nk-pelanggaran{border-radius:11px;padding:12px 14px;margin-top:10px;border:1px solid rgba(255,107,107,.2);background:rgba(255,107,107,.05);}
+.nk-pel-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--r);margin-bottom:7px;}
+.nk-pel-item{display:flex;gap:9px;font-size:.81rem;margin-bottom:6px;line-height:1.5;}
+
+/* ── Tabel accordion ──────────────────────────── */
+.tabel-accord{display:flex;flex-direction:column;gap:7px;margin:14px 0;}
+.tabel-row{border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);transition:border-color .2s;}
+.tabel-row.hl{border-color:var(--y);}
+.tabel-row-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-weight:800;font-size:.86rem;user-select:none;}
+.tabel-row-head .arrow{margin-left:auto;font-size:.75rem;color:var(--muted);transition:transform .3s;}
+.tabel-row-head.open .arrow{transform:rotate(180deg);}
+.tabel-row-body{display:none;padding:0 14px 12px;}
+.tabel-detail{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.td-cell{background:rgba(255,255,255,.04);border-radius:9px;padding:9px 11px;}
+.td-cell-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;}
+.td-cell-val{font-size:.79rem;line-height:1.5;}
+
+/* ── Portofolio card ──────────────────────────── */
+.porto-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:9px;}
+.porto-label{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.porto-val{font-size:.85rem;line-height:1.6;color:var(--text);font-weight:600;font-style:italic;}
+
 /* ── Refleksi ─────────────────────────────────── */
 .refl-item{border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.08);margin-bottom:10px;}
 .refl-item label{font-size:.78rem;font-weight:800;display:block;margin-bottom:5px;}
 .refl-item textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.8rem;resize:vertical;min-height:58px;}
 
+/* ── Score popup ──────────────────────────────── */
+.score-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--y);color:#0e1c2f;border-radius:16px;padding:14px 26px;font-family:'Fredoka One',cursive;font-size:1.6rem;animation:popIn .3s ease;z-index:999;pointer-events:none;}
+@keyframes popIn{from{transform:translate(-50%,-50%) scale(.4);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
+
+/* ── Nav scene label ──────────────────────────── */
+.nav-scene{font-size:.7rem;color:var(--muted);font-weight:700;white-space:nowrap;}
+
+/* ── Preview pertemuan ────────────────────────── */
+.p2-preview{background:linear-gradient(135deg,rgba(62,207,207,.1),rgba(167,139,250,.1));border:1px solid rgba(62,207,207,.25);border-radius:16px;padding:18px;margin:16px 0;}
+.p2-norma-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+.p2-norma{border-radius:12px;padding:12px;text-align:center;font-weight:800;font-size:.82rem;}
+
 /* ── Confetti ─────────────────────────────────── */
 .conf{position:fixed;border-radius:2px;animation:confFall linear both;pointer-events:none;z-index:9999;}
 @keyframes confFall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
 #confWrap{position:fixed;inset:0;pointer-events:none;z-index:9998;}
+
+/* ── Responsive ───────────────────────────────── */
+@media(max-width:540px){
+.nc-grid,.pj-grid,.puzzle-opts,.p2-norma-grid{grid-template-columns:1fr;}
+.nk-row,.tabel-detail{grid-template-columns:1fr;}
+.norma-tabs{gap:5px;}
+.atp-pertemuan-grid .atp-p-card{padding:10px;}
+}
 `;
 
 // ═══════════════════════════════════════════════════════════════

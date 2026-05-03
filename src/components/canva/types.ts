@@ -104,6 +104,7 @@ export const RATIOS: Ratio[] = [
   { id: '1:1', name: '1:1', desc: 'Square Post', w: 800, h: 800 },
   { id: 'A4', name: 'A4', desc: 'Dokumen LKS', w: 794, h: 1123 },
   { id: '4:3', name: '4:3', desc: 'Presentasi Lama', w: 1024, h: 768 },
+  { id: 'rumah-belajar', name: 'Rumah Belajar', desc: 'Rasio upload Rumah Belajar', w: 960, h: 540 },
 ];
 
 export const ELEM_TYPES: ElemType[] = [

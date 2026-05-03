@@ -234,3 +234,37 @@ Stage Summary:
 - All 28 module/game types have HTML renderers for student export
 - Guided Tour, CP Suggest, Form Validation all migrated
 - Build: ✅ Passed | Push: ✅ Success
+
+---
+Task ID: 3b
+Agent: Full-Stack Developer
+Task: Upgrade Hasil and Kuis templates to match preset HTML quality
+
+Work Log:
+- Read current hasil.ts and kuis.ts templates plus base-css.ts and slot-types.ts
+- **Hasil template upgrades:**
+  - Removed SVG ring (<svg class="hs-ring"> and all related SVG circle elements) that caused double-ring effect
+  - Now uses only the conic-gradient circle (.hasil-circle from base-css.ts) with ::before pseudo-element for inner circle
+  - Simplified HTML: removed .hs-circle-wrap wrapper, .hasil-circle is now the direct container
+  - Renamed .hs-level -> .level-badge to match preset CSS class name
+  - Updated local <style> block: removed .hs-circle-wrap and .hs-ring styles, removed .hasil-circle::before (already in base-css)
+  - Added Portofolio Jawaban section with #hasilPorto container that reads from window.PORTO on screen activation
+  - Added populatePorto() JS function that iterates window.PORTO keys and renders .porto-card elements
+  - Portofolio shows "Belum ada jawaban yang disimpan." when window.PORTO is empty or undefined
+  - saveReflections() now calls populatePorto() after saving to refresh the portofolio display
+  - updateHasilLevel() now also updates the conic-gradient color directly for level-matching ring color
+  - Removed SVG ring animation code from animateScore() — only animates --prog CSS variable and number counter
+- **Kuis template upgrades:**
+  - Added chip-sc header badge: <span class="chip-sc" style="background:rgba(249,193,46,.15);color:var(--y)">❓ Kuis Pengetahuan</span> above the title
+  - Added progress dots between header card and question cards using .puzzle-prog / .puzzle-dot pattern
+  - Each dot represents a question; .done class (green) when answered, .cur class (yellow) for next unanswered
+  - Added updateProgressDots() JS function called on each answer
+  - Enhanced question card: changed "Soal X" badge to include quiz icon -> "❓ Soal X"
+  - Added local <style> block for .puzzle-prog, .puzzle-dot, .puzzle-dot.done, .puzzle-dot.cur
+  - Initialized progress dots on page load via updateProgressDots()
+- Verified lint: no new errors introduced in modified files
+
+Stage Summary:
+- Hasil: clean conic-gradient circle only (no SVG overlay), portofolio section from window.PORTO, preset-matching class names
+- Kuis: chip-sc header, progress dots per question, quiz icon on question cards
+- Both templates now match preset HTML quality standards

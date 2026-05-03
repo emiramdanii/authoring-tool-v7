@@ -2,7 +2,9 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useAuthoringStore } from '@/store/authoring-store';
-import { generateExportHtml, generatePrintAdminHtml } from '@/lib/export-html';
+import { generatePrintAdminHtml } from '@/lib/export-html';
+import { assembleHTML } from '@/lib/templates/assembly';
+import { autoBuildConfig, type AuthoringData } from '@/lib/templates/auto-build';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import {
@@ -120,7 +122,7 @@ export default function ImportExport() {
     toast.success('✅ JSON berhasil diekspor!');
   }, []);
 
-  // ── Existing: Export Student HTML ──────────────────────────────
+  // ── Export Student HTML (using new modular template system) ─────
   const exportStudentHtml = useCallback(() => {
     const s = useAuthoringStore.getState();
 
@@ -136,11 +138,24 @@ export default function ImportExport() {
     }
 
     try {
-      const html = generateExportHtml({
-        meta: s.meta, cp: s.cp, tp: s.tp, atp: s.atp, alur: s.alur,
-        skenario: s.skenario, kuis: s.kuis, materi: s.materi,
-        modules: s.modules, games: s.games,
-      });
+      // Build authoring data in the format expected by autoBuildConfig
+      const authoringData: AuthoringData = {
+        meta: s.meta,
+        cp: s.cp,
+        tp: s.tp,
+        atp: s.atp,
+        alur: s.alur,
+        skenario: s.skenario,
+        kuis: s.kuis,
+        modules: s.modules,
+        games: s.games,
+        materi: s.materi,
+      };
+
+      // Use the new modular assembly pipeline
+      const config = autoBuildConfig(authoringData);
+      const html = assembleHTML(config);
+
       const filename = (s.meta.judulPertemuan || 'media')
         .replace(/[^a-z0-9\-]/gi, '-')
         .replace(/-+/g, '-')

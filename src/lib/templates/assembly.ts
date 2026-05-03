@@ -6,7 +6,7 @@
 
 import { getBaseCSS, type CSSVars } from './engine/base-css';
 import { getBaseJS, type BaseJSData } from './engine/base-js';
-import { renderNavbarCSS } from './engine/navbar-html';
+import { renderNavbarCSS, renderSharedNavbarHTML } from './engine/navbar-html';
 import { renderTemplateHTML } from '../template-registry';
 import type { TemplateId, ScreenSlotData } from './engine/slot-types';
 
@@ -22,6 +22,8 @@ export interface AssemblyScreen {
   templateId: TemplateId;
   /** Slot data for the template */
   data: ScreenSlotData;
+  /** Optional navbar scene label for this screen (shown in navScene element) */
+  navLabel?: string;
 }
 
 /** Configuration for the full HTML assembly */
@@ -34,31 +36,10 @@ export interface AssemblyConfig {
   cssVars?: Partial<CSSVars>;
   /** Optional navbar configuration overrides */
   navbarConfig?: Record<string, unknown>;
-  /** Whether to include confetti library/scripts */
+  /** Whether to include confetti library/scripts (default: true) */
   includeConfetti?: boolean;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// HELPER: Build the confetti script block
-// ═══════════════════════════════════════════════════════════════
-
-function getConfettiScript(): string {
-  return `
-// ── Confetti launcher ───────────────────────────────
-function launchConfetti(){
-  var w=document.getElementById('confWrap');
-  if(!w)return;
-  var cols=['#f9c12e','#3ecfcf','#ff6b6b','#a78bfa','#34d399','#fb923c'];
-  for(var i=0;i<100;i++){
-    var c=document.createElement('div');
-    c.className='conf';
-    var sz=4+Math.random()*9;
-    c.style.cssText='left:'+Math.random()*100+'%;top:'+(-20-Math.random()*40)+'px;width:'+sz+'px;height:'+sz+'px;background:'+cols[Math.floor(Math.random()*cols.length)]+';border-radius:'+(Math.random()>.5?'50%':'2px')+';animation-duration:'+(2+Math.random()*3)+'s;animation-delay:'+(Math.random()*.8)+'s;';
-    w.appendChild(c);
-  }
-  setTimeout(function(){w.innerHTML='';},6000);
-}
-`;
+  /** Logo text displayed in the shared navbar (e.g. '📚 MPI', '🧑‍🤝‍🧑 Hakikat Norma') */
+  navbarLogo?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -70,31 +51,22 @@ function buildScreenIds(screens: AssemblyScreen[]): string[] {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HELPER: Extract skenario data from screens for the base JS
+// HELPER: Strip per-screen navbar from screen HTML
 // ═══════════════════════════════════════════════════════════════
 
-function extractSkenarioData(screens: AssemblyScreen[]): unknown[] {
-  for (const s of screens) {
-    if (s.templateId === 'skenario' && s.data._templateId === 'skenario') {
-      const data = s.data as import('./engine/slot-types').SkenarioSlotData;
-      return data.skenario || [];
-    }
-  }
-  return [];
-}
-
-// ═══════════════════════════════════════════════════════════════
-// HELPER: Extract kuis data from screens for the base JS
-// ═══════════════════════════════════════════════════════════════
-
-function extractKuisData(screens: AssemblyScreen[]): unknown[] {
-  for (const s of screens) {
-    if (s.templateId === 'kuis' && s.data._templateId === 'kuis') {
-      const data = s.data as import('./engine/slot-types').KuisSlotData;
-      return data.kuis || [];
-    }
-  }
-  return [];
+/**
+ * Remove duplicate `<nav class="navbar">...</nav>` from a screen's HTML.
+ *
+ * Each screen template may include its own navbar, but the assembly pipeline
+ * places a single shared navbar at the top of the document. This function
+ * strips the per-screen navbar to avoid duplicates.
+ *
+ * Handles both multi-line nav blocks and single-line nav elements.
+ */
+function stripNavbarFromScreen(html: string): string {
+  // Match <nav class="navbar"...>...</nav> including multiline content.
+  // The [\s\S]*? ensures non-greedy matching across newlines.
+  return html.replace(/<nav\s+class="navbar[^"]*"[^>]*>[\s\S]*?<\/nav>/g, '');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -111,14 +83,14 @@ function extractKuisData(screens: AssemblyScreen[]): unknown[] {
  * - Confetti wrapper div in the body
  * - Each screen rendered via its template's renderHTML function
  * - First screen gets `class="screen active"`
- * - Shared JS from getBaseJS() for screen navigation
- * - Confetti launcher script
+ * - Shared JS from getBaseJS() for screen navigation + scoring + confetti
+ * - Each template's inline <script> handles its own interactivity
  *
  * @param config - Assembly configuration with title, screens, and optional theming
  * @returns Complete HTML document string
  */
 export function assembleHTML(config: AssemblyConfig): string {
-  const { title, screens, cssVars, includeConfetti = true } = config;
+  const { title, screens, cssVars, includeConfetti = true, navbarLogo } = config;
 
   if (!screens.length) {
     return '<!DOCTYPE html><html><body><p>No screens to assemble.</p></body></html>';
@@ -128,16 +100,33 @@ export function assembleHTML(config: AssemblyConfig): string {
   const baseCSS = getBaseCSS(cssVars);
   const navbarCSS = renderNavbarCSS();
 
-  // ── 2. Build screen HTML ──────────────────────────────────────
+  // ── 2. Build shared navbar HTML ───────────────────────────────
+  const sharedNavbarHTML = renderSharedNavbarHTML(navbarLogo);
+
+  // ── 3. Build screen HTML ──────────────────────────────────────
   const screenIds = buildScreenIds(screens);
   const screensHTML = screens
     .map((screen, index) => {
       const isActive = index === 0;
-      const html = renderTemplateHTML(screen.templateId, screen.data, screen.id);
+      let html = renderTemplateHTML(screen.templateId, screen.data, screen.id);
+
+      // Strip per-screen duplicate navbar — the shared navbar handles all nav
+      html = stripNavbarFromScreen(html);
+
+      // Override data-nav-label attribute if navLabel is provided in config.
+      // Templates already include a default data-nav-label, but the assembly
+      // config can override it per-screen for customization.
+      if (screen.navLabel) {
+        // If template already has data-nav-label="...", replace its value
+        html = html.replace(
+          /data-nav-label="[^"]*"/,
+          `data-nav-label="${escapeHTML(screen.navLabel)}"`,
+        );
+      }
 
       // First screen gets "active" class; others remain hidden by CSS
       if (isActive) {
-        return html.replace(
+        html = html.replace(
           'class="screen"',
           'class="screen active"',
         );
@@ -146,37 +135,14 @@ export function assembleHTML(config: AssemblyConfig): string {
     })
     .join('\n');
 
-  // ── 3. Build JS ───────────────────────────────────────────────
-  const hasSkenario = screens.some((s) => s.templateId === 'skenario');
-  const hasMateri = screens.some(
-    (s) => s.templateId === 'materi-tabicons' || s.templateId === 'materi-accordion',
-  );
-  const hasKuis = screens.some((s) => s.templateId === 'kuis');
-  const hasModules = screens.some(
-    (s) =>
-      s.templateId === 'sortir-game' ||
-      s.templateId === 'roda-game' ||
-      s.templateId === 'flashcard' ||
-      s.templateId === 'hubungan-konsep' ||
-      s.templateId === 'diskusi-timer',
-  );
-
+  // ── 4. Build JS ───────────────────────────────────────────────
   const jsData: BaseJSData = {
     screens: screenIds,
-    skenarioData: extractSkenarioData(screens) as BaseJSData['skenarioData'],
-    kuisData: extractKuisData(screens) as BaseJSData['kuisData'],
-    modulesData: [],
-    fungsiData: [],
-    hasSkenario,
-    hasMateri,
-    hasKuis,
-    hasModules,
   };
 
   const baseJS = getBaseJS(jsData);
-  const confettiScript = includeConfetti ? getConfettiScript() : '';
 
-  // ── 4. Assemble complete HTML ─────────────────────────────────
+  // ── 5. Assemble complete HTML ─────────────────────────────────
   return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -193,10 +159,10 @@ ${navbarCSS}
 </head>
 <body>
   <div id="confWrap" style="position:fixed;inset:0;pointer-events:none;z-index:9998"></div>
+${sharedNavbarHTML}
 ${screensHTML}
   <script>
 ${baseJS}
-${confettiScript}
   </script>
 </body>
 </html>`;
@@ -226,10 +192,17 @@ export function assembleSingleScreen(
   // Render the screen with "active" class so it's visible
   const screenId = 's-' + templateId;
   let html = renderTemplateHTML(templateId, data, screenId);
+
+  // Strip per-screen duplicate navbar (shared navbar not needed for single-screen preview)
+  html = stripNavbarFromScreen(html);
+
   html = html.replace('class="screen"', 'class="screen active"');
 
-  // Minimal JS for single-screen (just confetti support)
-  const confettiScript = getConfettiScript();
+  // Minimal JS for single-screen preview
+  const jsData: BaseJSData = {
+    screens: [screenId],
+  };
+  const baseJS = getBaseJS(jsData);
 
   return `<!DOCTYPE html>
 <html lang="id">
@@ -249,20 +222,7 @@ ${navbarCSS}
   <div id="confWrap" style="position:fixed;inset:0;pointer-events:none;z-index:9998"></div>
 ${html}
   <script>
-// Single-screen mode: no navigation
-function goScreen(id){}
-function goNextScreen(){}
-function goPrevScreen(){}
-function switchKtab(id,el){
-  var tabs=document.querySelectorAll('.ktab');
-  for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
-  var conts=document.querySelectorAll('.ktab-content');
-  for(var i=0;i<conts.length;i++)conts[i].classList.remove('active');
-  if(el)el.classList.add('active');
-  var cont=document.getElementById(id);
-  if(cont)cont.classList.add('active');
-}
-${confettiScript}
+${baseJS}
   </script>
 </body>
 </html>`;
