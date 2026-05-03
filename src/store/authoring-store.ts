@@ -232,11 +232,119 @@ const PRESETS_KUIS: Record<string, KuisPreset> = {
   blank: { id: 'blank', label: 'Kosong – Isi Manual', soal: [] },
 };
 
+// ── Module Presets ──────────────────────────────────────────────────
+interface ModulePreset {
+  id: string;
+  label: string;
+  icon: string;
+  desc: string;
+  modules: Array<Record<string, unknown>>;
+}
+
+const PRESETS_MODULES: Record<string, ModulePreset> = {
+  'hakikat-norma': {
+    id: 'hakikat-norma',
+    label: 'Paket Hakikat Norma',
+    icon: '📦',
+    desc: '5 modul siap pakai',
+    modules: [
+      {
+        type: 'tab-icons',
+        title: '4 Jenis Norma',
+        intro: 'Jelajahi empat jenis norma yang mengatur kehidupan masyarakat',
+        layout: 'horizontal',
+        animation: 'fade',
+        tabs: [
+          { icon: '🕌', judul: 'Norma Agama', warna: '#34d399', isi: 'Norma agama berasal dari Tuhan dan diatur dalam kitab suci masing-masing agama. Sanksinya berupa dosa dan hukuman di akhirat. Contoh: Shalat lima waktu bagi Muslim, beribadah di gereja bagi Kristen.', poin: ['Bersumber dari Tuhan', 'Tertulis dalam kitab suci', 'Sanksi: dosa'], refleksi: 'Bagaimana kamu menjalankan norma agama di kehidupan sehari-hari?' },
+          { icon: '❤️', judul: 'Norma Kesusilaan', warna: '#ff6b6b', isi: 'Norma kesusilaan berasal dari hati nurani manusia. Sanksinya berupa rasa bersalah dan menyesal. Contoh: Tidak boleh mencuri, tidak boleh berbohong, menghormati orang tua.', poin: ['Bersumber dari hati nurani', 'Berlaku universal', 'Sanksi: rasa bersalah'], refleksi: 'Pernahkah hati nuranimu menegur ketika kamu berbuat salah?' },
+          { icon: '🤝', judul: 'Norma Kesopanan', warna: '#f9c82e', isi: 'Norma kesopanan berasal dari masyarakat dan mengatur pergaulan sehari-hari. Sanksinya berupa teguran atau dikucilkan. Contoh: Mengucap salam, mengantri, berpakaian rapi.', poin: ['Bersumber dari masyarakat', 'Berlaku lokal', 'Sanksi: teguran/sosial'], refleksi: 'Norma kesopanan apa yang paling sering kamu terapkan di sekolah?' },
+          { icon: '⚖️', judul: 'Norma Hukum', warna: '#a78bfa', isi: 'Norma hukum dibuat oleh lembaga negara dan bersifat mengikat seluruh warga. Sanksinya berupa denda, penjara, atau hukuman formal. Contoh: UU Lalu Lintas, UU Anti Narkoba.', poin: ['Dibuat oleh negara', 'Bersifat mengikat semua warga', 'Sanksi: denda/penjara'], refleksi: 'Mengapa norma hukum perlu ditegakkan dengan tegas?' },
+        ],
+      },
+      {
+        type: 'flashcard',
+        title: 'Kartu Istilah Norma',
+        instruksi: 'Klik kartu untuk membalik. Pelajari istilah dan definisinya!',
+        kartu: [
+          { depan: 'Apa itu Norma?', belakang: 'Norma adalah aturan atau pedoman yang mengatur tingkah laku manusia dalam kehidupan bermasyarakat.', hint: 'Aturan…' },
+          { depan: 'Apa itu Zoon Politikon?', belakang: 'Zoon Politikon adalah istilah Aristoteles yang berarti manusia adalah makhluk sosial yang selalu membutuhkan orang lain.', hint: 'Makhluk sosial…' },
+          { depan: 'Apa sanksi norma agama?', belakang: 'Sanksi norma agama berupa dosa dan hukuman dari Tuhan di akhirat.', hint: 'Bersifat spiritual…' },
+          { depan: 'Apa sanksi norma hukum?', belakang: 'Sanksi norma hukum berupa denda, penjara, atau hukuman formal dari negara.', hint: 'Bersifat formal…' },
+          { depan: 'Siapa yang membuat norma hukum?', belakang: 'Norma hukum dibuat oleh lembaga negara seperti DPR dan pemerintah.', hint: 'Lembaga negara…' },
+        ],
+      },
+      {
+        type: 'sorting',
+        title: 'Klasifikasi Norma',
+        instruksi: 'Kelompokkan pernyataan berikut ke dalam jenis norma yang tepat!',
+        kategori: [
+          { label: 'Norma Agama', color: '#34d399', id: 'agama' },
+          { label: 'Norma Kesusilaan', color: '#ff6b6b', id: 'kesusilaan' },
+          { label: 'Norma Kesopanan', color: '#f9c82e', id: 'kesopanan' },
+          { label: 'Norma Hukum', color: '#a78bfa', id: 'hukum' },
+        ],
+        items: [
+          { teks: 'Shalat lima waktu', kategori: 'agama' },
+          { teks: 'Tidak boleh mencuri', kategori: 'kesusilaan' },
+          { teks: 'Mengucapkan salam', kategori: 'kesopanan' },
+          { teks: 'Mematuhi rambu lalu lintas', kategori: 'hukum' },
+          { teks: 'Berpuasa di bulan Ramadhan', kategori: 'agama' },
+          { teks: 'Tidak boleh membunuh', kategori: 'kesusilaan' },
+          { teks: 'Mengantri di kasir', kategori: 'kesopanan' },
+          { teks: 'Membayar pajak tepat waktu', kategori: 'hukum' },
+          { teks: 'Beribadah sesuai agama', kategori: 'agama' },
+          { teks: 'Menghormati orang tua', kategori: 'kesopanan' },
+          { teks: 'Tidak boleh berbohong', kategori: 'kesusilaan' },
+          { teks: 'Mematuhi UU Anti Narkoba', kategori: 'hukum' },
+        ],
+      },
+      {
+        type: 'comparison',
+        title: 'Norma vs Pelanggaran',
+        intro: 'Bandingkan antara ketaatan dan pelanggaran norma',
+        animation: 'fade',
+        kolom: [
+          { icon: '✅', judul: 'Patuh Norma', warna: '#34d399' },
+          { icon: '❌', judul: 'Melanggar Norma', warna: '#ff6b6b' },
+        ],
+        baris: [
+          { label: 'Akibat', icon: '⚖️', nilai: ['Mendapat pujian dan kepercayaan', 'Dijauhi dan tidak dipercaya'] },
+          { label: 'Kehidupan sosial', icon: '👥', nilai: ['Harmonis dan tentram', 'Kacau dan penuh konflik'] },
+          { label: 'Hukuman', icon: '📋', nilai: ['Tidak ada sanksi', 'Dikenai sanksi sosial/hukum'] },
+          { label: 'Contoh', icon: '💡', nilai: ['Mengantri dengan tertib', 'Menyebut di depan antrian'] },
+        ],
+        tanya: 'Apa yang akan kamu pilih: patuh atau melanggar norma? Mengapa?',
+      },
+      {
+        type: 'icon-explore',
+        title: 'Fungsi Norma',
+        intro: 'Jelajahi lima fungsi norma dalam kehidupan masyarakat',
+        layout: 'grid',
+        animation: 'fade',
+        items: [
+          { icon: '🗺️', judul: 'Pedoman Tingkah Laku', warna: '#f9c82e', ringkasan: 'Norma memberi petunjuk cara bertindak yang benar', isi: 'Norma memberi petunjuk kepada setiap individu tentang cara bertindak yang baik dan benar dalam pergaulan sehari-hari. Tanpa norma, manusia tidak tahu mana yang boleh dan tidak boleh dilakukan.', contoh: ['Mengucap salam saat bertemu', 'Berhenti saat lampu merah', 'Berdoa sebelum makan'], sanksi: '' },
+          { icon: '🤝', judul: 'Menciptakan Ketertiban', warna: '#3ecfcf', ringkasan: 'Norma mencegah kekacauan dan konflik', isi: 'Norma mencegah kekacauan dan konflik. Dengan norma, setiap orang tahu apa yang boleh dan tidak boleh dilakukan sehingga kehidupan berjalan teratur.', contoh: ['Aturan antrian di kasir', 'Peraturan sekolah', 'Aturan lalu lintas'], sanksi: '' },
+          { icon: '🛡️', judul: 'Melindungi Hak Warga', warna: '#ff6b6b', ringkasan: 'Norma menjamin hak setiap anggota masyarakat', isi: 'Norma menjamin setiap anggota masyarakat mendapatkan hak-haknya dan diperlakukan secara adil tanpa diskriminasi.', contoh: ['Hukum melindungi hak milik', 'Hak beribadah dilindungi', 'Aturan anti perundungan'], sanksi: '' },
+          { icon: '💚', judul: 'Memperkuat Solidaritas', warna: '#34d399', ringkasan: 'Norma mempererat rasa kebersamaan', isi: 'Norma mempererat rasa kebersamaan, persatuan, dan kepedulian antaranggota masyarakat. Norma mengajarkan bahwa kita saling membutuhkan.', contoh: ['Gotong royong saat musibah', 'Saling menghormati keberagaman', 'Berkunjung saat hari raya'], sanksi: '' },
+          { icon: '⚖️', judul: 'Mewujudkan Keadilan', warna: '#a78bfa', ringkasan: 'Norma memastikan perlakuan setara', isi: 'Norma memastikan setiap orang diperlakukan setara dan adil. Tidak ada yang boleh mendapat perlakuan berbeda hanya karena kekayaan, jabatan, atau kekuasaan.', contoh: ['Hukum berlaku sama untuk semua', 'Norma antrian adil', 'Penilaian sekolah objektif'], sanksi: '' },
+        ],
+      },
+    ],
+  },
+  blank: {
+    id: 'blank',
+    label: 'Kosong – Dari Nol',
+    icon: '📋',
+    desc: 'Tambahkan modul sendiri',
+    modules: [],
+  },
+};
+
 // ── Full Preset Mapping ──────────────────────────────────────────
-const FULL_PRESET_MAP: Record<string, { meta: string; cp: string; tp: string; atp: string; alur: string; kuis: string }> = {
-  'hakikat-norma': { meta: 'hakikat-norma', cp: 'ppkn-smp-bab3', tp: 'bab3-full', atp: 'bab3-3pertemuan', alur: 'hakikat-norma-80menit', kuis: 'norma-10-soal' },
-  'macam-norma': { meta: 'macam-norma', cp: 'ppkn-smp-bab3', tp: 'bab3-full', atp: 'bab3-3pertemuan', alur: 'hakikat-norma-80menit', kuis: 'norma-10-soal' },
-  blank: { meta: 'blank', cp: 'blank', tp: 'blank', atp: 'blank', alur: 'blank', kuis: 'blank' },
+const FULL_PRESET_MAP: Record<string, { meta: string; cp: string; tp: string; atp: string; alur: string; kuis: string; modules: string }> = {
+  'hakikat-norma': { meta: 'hakikat-norma', cp: 'ppkn-smp-bab3', tp: 'bab3-full', atp: 'bab3-3pertemuan', alur: 'hakikat-norma-80menit', kuis: 'norma-10-soal', modules: 'hakikat-norma' },
+  'macam-norma': { meta: 'macam-norma', cp: 'ppkn-smp-bab3', tp: 'bab3-full', atp: 'bab3-3pertemuan', alur: 'hakikat-norma-80menit', kuis: 'norma-10-soal', modules: 'hakikat-norma' },
+  blank: { meta: 'blank', cp: 'blank', tp: 'blank', atp: 'blank', alur: 'blank', kuis: 'blank', modules: 'blank' },
 };
 
 // ── Verb options ─────────────────────────────────────────────────
@@ -365,6 +473,7 @@ interface AuthoringState {
   applyAtpPreset: (presetKey: string) => void;
   applyAlurPreset: (presetKey: string) => void;
   applyMetaPreset: (presetKey: string) => void;
+  applyModulePreset: (presetKey: string) => void;
   newProject: () => void;
 }
 
@@ -872,6 +981,7 @@ export const useAuthoringStore = create<AuthoringState>((set, get) => ({
     const atp = PRESETS_ATP[mapping.atp];
     const alur = PRESETS_ALUR[mapping.alur];
     const kuis = PRESETS_KUIS[mapping.kuis];
+    const modules = PRESETS_MODULES[mapping.modules];
 
     set({
       activePreset: presetKey === 'blank' ? null : presetKey,
@@ -883,7 +993,7 @@ export const useAuthoringStore = create<AuthoringState>((set, get) => ({
       kuis: kuis ? deepClone(kuis.soal) : [],
       skenario: [],
       materi: { blok: [] },
-      modules: [],
+      modules: modules ? deepClone(modules.modules) : [],
       games: [],
       dirty: false,
     });
@@ -934,6 +1044,13 @@ export const useAuthoringStore = create<AuthoringState>((set, get) => ({
     if (!p) return;
     set({ meta: deepClone(p), dirty: true });
     toast.success(`\u2705 Preset meta diterapkan: ${p.label}`);
+  },
+
+  applyModulePreset: (presetKey) => {
+    const p = PRESETS_MODULES[presetKey];
+    if (!p) return;
+    set({ modules: deepClone(p.modules), dirty: true });
+    toast.success(`✅ Preset Modul diterapkan: ${p.label}`);
   },
 
   newProject: () => {
