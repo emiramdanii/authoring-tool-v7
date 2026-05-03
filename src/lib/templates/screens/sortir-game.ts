@@ -7,17 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { SortirGameSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ═══════════════════════════════════════════════════════════════
 // renderSortirGameHTML

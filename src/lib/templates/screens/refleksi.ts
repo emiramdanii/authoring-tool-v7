@@ -11,17 +11,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { RefleksiSlotData, FlashcardItem } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ── Default reflection prompts if none provided ───────────────
 const DEFAULT_PROMPTS = [
@@ -65,7 +55,7 @@ export function renderRefleksiHTML(data: RefleksiSlotData, screenId: string): st
     : DEFAULT_PROMPTS;
   const portofolio = data.portofolio || [];
   const flashcardRingkasan = data.flashcardRingkasan || [];
-  const useLocalStorage = data.useLocalStorage === true || data.useLocalStorage === 'yes' as unknown as boolean;
+  const useLocalStorage = data.useLocalStorage === true || data.useLocalStorage === 'yes' || data.useLocalStorage === 'true';
 
   // Build portofolio section — either static or localStorage-driven
   let portofolioHTML = '';

@@ -10,17 +10,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { SkenarioSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN EXPORT — renderSkenarioHTML
@@ -620,8 +610,10 @@ export function renderSkenarioHTML(data: SkenarioSlotData, screenId: string): st
       for(var i = skCh; i < CHAPTERS.length; i++){
         var ch = CHAPTERS[i];
         if(ch.choices && ch.choices.length > 0){
-          // Pick the first choice (neutral skip)
-          var c = ch.choices[0];
+          // Pick the choice with the HIGHEST pts value (not just the first)
+          var c = ch.choices.reduce(function(best, cur) {
+            return (cur.pts || 0) > (best.pts || 0) ? cur : best;
+          }, ch.choices[0]);
           totalPts += (c.pts || 0);
           choiceLog.push({
             chapter: ch.title || ('Bab ' + (i + 1)),

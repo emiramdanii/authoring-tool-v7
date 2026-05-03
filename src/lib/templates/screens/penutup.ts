@@ -17,17 +17,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { PenutupSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ── Accent color map ──────────────────────────────────────────
 const ACCENT_MAP: Record<string, { hex: string; rgba: string }> = {
@@ -221,9 +211,6 @@ export function renderPenutupHTML(data: PenutupSlotData, screenId: string): stri
       </div>
     </div>
   </div>
-
-  <!-- Confetti container -->
-  <div id="confWrap" style="position:fixed;inset:0;pointer-events:none;z-index:9998"></div>
 
   <style>
     /* ── Hero animated gradient ──────────────────────────── */

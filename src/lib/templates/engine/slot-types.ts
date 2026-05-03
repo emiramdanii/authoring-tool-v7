@@ -200,7 +200,7 @@ export interface MateriTabIconsSlotData {
   title: string;
   tabs: MateriTabItem[];
   /** Show read-tracking checkmarks and progress bar on tabs */
-  readTracking?: boolean;
+  readTracking?: boolean | 'yes' | 'no' | 'true' | 'false';
   /** Def-boxes rendered above tab content */
   defBoxes?: DefBoxItem[];
   /** Card grid rendered above tab content */
@@ -361,7 +361,7 @@ export interface RefleksiSlotData {
   /** Flashcard ringkasan shown in refleksi */
   flashcardRingkasan?: FlashcardItem[];
   /** Auto-populate portofolio from localStorage PORTO object */
-  useLocalStorage?: boolean;
+  useLocalStorage?: boolean | 'yes' | 'no' | 'true' | 'false';
 }
 
 // ── 14. Penutup ─────────────────────────────────────────────────

@@ -12,17 +12,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { CoverSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ═══════════════════════════════════════════════════════════════
 // renderCoverHTML
@@ -52,15 +42,23 @@ export function renderCoverHTML(data: CoverSlotData, screenId: string): string {
     { bg: 'rgba(251,146,60,.15)', color: 'var(--o)' },
   ];
 
-  // Auto-generate chips from data if not provided
+  // Auto-generate chips from data if not provided — only include non-empty values
+  const autoChips: {icon: string; label: string}[] = [];
+  if (mapel || kelas) autoChips.push({ icon: '📋', label: `${mapel} ${kelas}`.trim() });
+  if (durasi) autoChips.push({ icon: '⏱️', label: `${durasi} Menit` });
+  if (fase) autoChips.push({ icon: '🎯', label: `Fase ${fase}` });
+  if (elemen) autoChips.push({ icon: '📚', label: `Elemen: ${elemen}` });
+  if (autoChips.length === 0) autoChips.push({ icon: '📋', label: 'Kurikulum Merdeka' });
+
   const chipsHTML = chips.length > 0
     ? chips.map((c, i) => {
         const col = chipColors[i % chipColors.length];
         return `<span class="cv-chip" style="background:${col.bg};color:${col.color};animation-delay:${0.6 + i * 0.1}s">${esc(c.icon || '')} ${esc(c.label)}</span>`;
       }).join('\n      ')
-    : `<span class="cv-chip" style="background:rgba(249,193,46,.15);color:var(--y);animation-delay:.6s">📋 ${esc(mapel)} ${esc(kelas)}</span>
-      <span class="cv-chip" style="background:rgba(62,207,207,.15);color:var(--c);animation-delay:.7s">⏱️ ${esc(durasi)} Menit</span>
-      <span class="cv-chip" style="background:rgba(52,211,153,.15);color:var(--g);animation-delay:.8s">Kurikulum Merdeka</span>`;
+    : autoChips.map((c, i) => {
+        const col = chipColors[i % chipColors.length];
+        return `<span class="cv-chip" style="background:${col.bg};color:${col.color};animation-delay:${0.6 + i * 0.1}s">${esc(c.icon)} ${esc(c.label)}</span>`;
+      }).join('\n      ');
 
   // Build title with optional bab/pertemuan prefix
   const titlePrefix = bab || pertemuan
@@ -117,7 +115,7 @@ export function renderCoverHTML(data: CoverSlotData, screenId: string): string {
       <div class="cv-icon-pulse"></div>
       <div class="cover-icon">${esc(icon)}</div>
     </div>
-    <div class="cv-meta" style="animation-delay:.2s">📚 ${esc(mapel)} · Kelas ${esc(kelas)} · Kurikulum Merdeka</div>
+    <div class="cv-meta" style="animation-delay:.2s">${[mapel ? `📚 ${esc(mapel)}` : '', kelas ? `Kelas ${esc(kelas)}` : '', 'Kurikulum Merdeka'].filter(Boolean).join(' · ')}</div>
     <h1 class="cover-title cv-entrance" style="animation-delay:.3s">${titlePrefix}${esc(title)}</h1>
     ${subtitle ? `<p class="sub cv-entrance" style="max-width:420px;margin:8px auto;animation-delay:.5s">${esc(subtitle)}</p>` : ''}
     <div class="cover-chips">

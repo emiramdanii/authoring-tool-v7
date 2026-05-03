@@ -11,17 +11,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { TujuanSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ═══════════════════════════════════════════════════════════════
 // renderTujuanHTML
@@ -61,7 +51,7 @@ export function renderTujuanHTML(data: TujuanSlotData, screenId: string): string
       </div>
     </div>`;
       }).join('')
-    : '<p class="tj-empty">Tujuan Pembelajaran belum diisi.</p>';
+    : '<div class="card" style="text-align:center;padding:30px"><div style="font-size:2.5rem;margin-bottom:10px">🎯</div><div style="font-family:Fredoka One,cursive;font-size:1rem;color:var(--muted)">Tujuan pembelajaran akan ditampilkan di sini</div><p style="font-size:.82rem;color:var(--muted);margin-top:6px">Tujuan pembelajaran untuk bab ini sedang disiapkan.</p></div>';
 
   // Progress indicator HTML (only if there are items)
   const progressHtml = total > 0

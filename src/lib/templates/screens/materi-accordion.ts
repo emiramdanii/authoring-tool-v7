@@ -11,17 +11,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { MateriAccordionSlotData, MateriAccordionStep, DefBoxItem, CardGridItem, DiskusiKelompokBanner, DiskusiBoxData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ── Accent color map ──────────────────────────────────────────
 const ACCENT_MAP: Record<string, { hex: string; rgba: string }> = {

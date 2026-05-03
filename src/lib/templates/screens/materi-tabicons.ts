@@ -26,17 +26,7 @@ import type {
   TabelAccordionItem,
   DiskusiBoxData,
 } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ── Accent color map ──────────────────────────────────────────
 const ACCENT_MAP: Record<string, { hex: string; rgba: string }> = {
@@ -127,7 +117,7 @@ export function renderMateriTabIconsHTML(data: MateriTabIconsSlotData, screenId:
   const title = data.title || 'Materi Pembelajaran';
   const tabs = data.tabs || [];
   const prefix = screenId;
-  const readTracking = data.readTracking === true || data.readTracking === 'yes' as unknown as boolean;
+  const readTracking = data.readTracking === true || data.readTracking === 'yes' || data.readTracking === 'true';
   const normaTabs = data.normaTabs || [];
   const tabelAccordion = data.tabelAccordion || [];
   const useNormaMode = normaTabs.length > 0;

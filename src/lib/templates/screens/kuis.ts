@@ -6,23 +6,31 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { KuisSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN EXPORT — renderKuisHTML
 // ═══════════════════════════════════════════════════════════════
 export function renderKuisHTML(data: KuisSlotData, screenId: string): string {
   const kuis = data.kuis || [];
+
+  // ── Empty-state: show placeholder if no quiz data ──
+  const hasQuestions = kuis.length > 0 && kuis.some(s => s.q && s.q.trim());
+  if (!hasQuestions) {
+    return `<div class="screen" id="${esc(screenId)}" data-nav-label="Kuis">
+  <div class="main">
+    <div class="card" style="text-align:center;padding:40px 24px">
+      <div style="font-size:3rem;margin-bottom:12px">📝</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--muted)">Kuis segera hadir</div>
+      <p style="font-size:.84rem;color:var(--muted);margin-top:8px">Soal kuis untuk bab ini sedang disiapkan.</p>
+    </div>
+    <div class="btn-row btn-center mt14">
+      <button class="btn btn-y" onclick="goNextScreen()">Lanjut →</button>
+      <button class="btn btn-ghost" onclick="goPrevScreen()">← Kembali</button>
+    </div>
+  </div>
+</div>`;
+  }
   const kuisJS = JSON.stringify(
     kuis.map((s) => ({
       q: s.q,

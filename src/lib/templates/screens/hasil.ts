@@ -7,17 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { HasilSlotData } from '../engine/slot-types';
-
-// ── HTML Entity Escaping ──────────────────────────────────────
-function esc(s: string | number | null | undefined): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { esc } from '../engine/esc';
 
 // ── Determine level info from score ───────────────────────────
 interface LevelInfo {
@@ -149,11 +139,15 @@ export function renderHasilHTML(data: HasilSlotData, screenId: string): string {
       if (window._kuisResult && typeof window._kuisResult.skor === 'number') {
         return window._kuisResult;
       }
-      return { skor: STATIC_SCORE, correct: Math.round((STATIC_SCORE / 100) * STATIC_TOTAL), wrong: STATIC_TOTAL - Math.round((STATIC_SCORE / 100) * STATIC_TOTAL), total: STATIC_TOTAL };
+      var _correct = Math.floor((STATIC_SCORE / 100) * STATIC_TOTAL);
+      return { skor: STATIC_SCORE, correct: _correct, wrong: STATIC_TOTAL - _correct, total: STATIC_TOTAL };
     }
 
     // ── Animate score counter & conic gradient ──────────
+    var _hasilAnimated = false;
     function animateScore(){
+      if (_hasilAnimated) return;
+      _hasilAnimated = true;
       var result = resolveScore();
       var targetScore = result.skor;
       var totalKuis = result.total;
@@ -183,8 +177,9 @@ export function renderHasilHTML(data: HasilSlotData, screenId: string): string {
         }
         numEl.textContent = current;
         circle.style.setProperty('--prog', current + '%');
-        if (correctEl) correctEl.textContent = Math.round((current / 100) * totalKuis);
-        if (wrongEl) wrongEl.textContent = totalKuis - Math.round((current / 100) * totalKuis);
+        var _curCorrect = Math.floor((current / 100) * totalKuis);
+        if (correctEl) correctEl.textContent = _curCorrect;
+        if (wrongEl) wrongEl.textContent = totalKuis - _curCorrect;
       }, 30);
 
       // Set total soal if available

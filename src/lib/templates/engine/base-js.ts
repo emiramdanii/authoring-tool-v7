@@ -155,8 +155,12 @@ function updateNavbarButtons() {
   }
 }
 
-// ── CONFETTI LAUNCHER ───────────────────────────────
+// ── CONFETTI LAUNCHER (with 3s cooldown) ───────────
+window._lastConfettiTime = 0;
 function launchConfetti() {
+  var now = Date.now();
+  if (now - window._lastConfettiTime < 3000) return; // 3s cooldown
+  window._lastConfettiTime = now;
   var w = document.getElementById('confWrap');
   if (!w) return;
   var cols = ['#f9c12e','#3ecfcf','#ff6b6b','#a78bfa','#34d399','#fb923c'];
