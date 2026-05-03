@@ -933,7 +933,7 @@ document.querySelectorAll('[id^=game_]').forEach(function(el){
   exportSlideshowHTML: () => {
     const { pages } = get();
     const ratio = RATIOS.find(r => r.id === get().ratioId) || RATIOS[0];
-    const slidesHtml = pages.map((p, i) => get().exportPageHTML(i).replace(/.*<body>/s, '').replace(/<\/body>.*/s, '').replace(/<div class="slide">/, `<div class="slide" data-slide="${i}" style="display:${i === 0 ? 'block' : 'none'}">`)).join('\n');
+    const slidesHtml = pages.map((p, i) => get().exportPageHTML(i).replace(new RegExp('.*<body>', 's'), '').replace(new RegExp('<\\/body>.*', 's'), '').replace(/<div class="slide">/, `<div class="slide" data-slide="${i}" style="display:${i === 0 ? 'block' : 'none'}">`)).join('\n');
 
     return `<!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1044,7 +1044,7 @@ ${slidesHtml}
         const title = authStore.meta.judulPertemuan || authStore.meta.namaBab || 'Media Pembelajaran Interaktif';
 
         // Determine accent color
-        const pertemuanKe = authStore.meta.pertemuanKe || 1;
+        const pertemuanKe = (authStore.meta as unknown as Record<string, unknown>).pertemuanKe as number || 1;
         const accentHexMap: Record<string, string> = {
           '--y': '#f9c12e', '--c': '#3ecfcf', '--g': '#34d399',
           '--p': '#a78bfa', '--o': '#fb923c', '--r': '#ff6b6b',
@@ -1135,7 +1135,7 @@ function renderTemplateExportHTML(page: CanvaPage): string | null {
         slotData = { ...slotData, _templateId: templateId };
       }
 
-      const html = renderTemplateHTML(templateId, slotData as import('@/lib/templates/engine/slot-types').ScreenSlotData, 's-export');
+      const html = renderTemplateHTML(templateId, slotData as unknown as import('@/lib/templates/engine/slot-types').ScreenSlotData, 's-export');
       // Wrap in slide-compatible container
       return `<div style="position:absolute;inset:0;overflow:auto">${html.replace('class="screen"', 'style="min-height:100%;padding:20px"')}</div>`;
     } catch (e) {

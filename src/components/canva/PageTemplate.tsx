@@ -161,7 +161,7 @@ function CoverTemplate({ td, palette, isSelected, onEditField }: TemplateInterna
       />
 
       {/* Badge */}
-      {(td.mapel || td.kelas) && (
+      {!!(td.mapel || td.kelas) && (
         <div className="mt-5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold"
           style={{
             background: `${accent}20`,
@@ -289,9 +289,9 @@ function MateriTemplate({ td, palette, isSelected, onEditField }: TemplateIntern
         <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
           {blok.map((b, i) => (
             <div key={i} className="p-2 rounded-lg bg-white/5 border border-white/10">
-              {b.judul && <div className="text-[10px] font-bold text-white mb-0.5">{String(b.judul)}</div>}
-              {b.isi && <div className="text-[8px] text-white/70 leading-relaxed line-clamp-3">{String(b.isi)}</div>}
-              {b.icon && <span className="text-sm mr-1">{String(b.icon)}</span>}
+              {!!b.judul && <div className="text-[10px] font-bold text-white mb-0.5">{String(b.judul)}</div>}
+              {!!b.isi && <div className="text-[8px] text-white/70 leading-relaxed line-clamp-3">{String(b.isi)}</div>}
+              {!!b.icon && <span className="text-sm mr-1">{String(b.icon)}</span>}
               {Array.isArray(b.butir) && (
                 <div className="space-y-0.5 mt-1">
                   {(b.butir as string[]).slice(0, 4).map((item, j) => (
@@ -545,7 +545,7 @@ function HeroTemplate({ td, palette, isSelected, onEditField }: TemplateInternal
       />
 
       {/* CTA Button */}
-      {td.cta && (
+      {!!td.cta && (
         <div className="mt-5 px-5 py-2 rounded-xl font-bold text-sm"
           style={{ background: accent, color: '#000' }}>
           {String(td.cta)}
@@ -553,7 +553,7 @@ function HeroTemplate({ td, palette, isSelected, onEditField }: TemplateInternal
       )}
 
       {/* Chips */}
-      {td.chips && (
+      {!!td.chips && (
         <div className="flex gap-2 mt-3">
           {String(td.chips).split(',').map((chip, i) => (
             <span key={i} className="px-2 py-0.5 rounded-full text-[8px] font-bold"
@@ -601,9 +601,9 @@ function SkenarioTemplate({ td, palette, isSelected, onEditField }: TemplateInte
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm">{String(ch.charEmoji || '🧑')}</span>
                 <span className="text-[10px] font-bold text-white">Babak {i + 1}</span>
-                {ch.title && <span className="text-[8px] text-white/40 truncate">{String(ch.title)}</span>}
+                {!!ch.title && <span className="text-[8px] text-white/40 truncate">{String(ch.title)}</span>}
               </div>
-              {ch.choicePrompt && (
+              {!!ch.choicePrompt && (
                 <div className="text-[8px] text-white/50 italic">{String(ch.choicePrompt)}</div>
               )}
               {Array.isArray(ch.choices) && (
@@ -1282,7 +1282,7 @@ function RodaGameTemplate({ td, palette, isSelected, onEditField }: TemplateInte
           </button>
 
           {/* Question area */}
-          {td.question && (
+          {!!td.question && (
             <div className="w-full p-2 rounded-lg text-center"
               style={{ background: `${accent}10`, border: `1px solid ${accent}25` }}>
               <div className="text-[9px] text-white/70">{String(td.question)}</div>

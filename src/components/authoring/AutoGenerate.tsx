@@ -1773,11 +1773,11 @@ export default function AutoGenerate() {
             ))}
           </div>
           {/* Top words */}
-          {parsed.topWords.length > 0 && (
+          {(parsed?.topWords?.length ?? 0) > 0 && (
             <div>
               <p className="text-xs text-zinc-500 mb-2">Kata kunci terdeteksi:</p>
               <div className="flex flex-wrap gap-1.5">
-                {parsed.topWords.slice(0, 15).map((w, i) => (
+                {parsed?.topWords.slice(0, 15).map((w, i) => (
                   <span
                     key={w + i}
                     className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-md text-xs text-zinc-300"
@@ -1789,11 +1789,11 @@ export default function AutoGenerate() {
             </div>
           )}
           {/* Definitions preview */}
-          {parsed.definitions.length > 0 && (
+          {(parsed?.definitions?.length ?? 0) > 0 && (
             <div>
               <p className="text-xs text-zinc-500 mb-2">Definisi terdeteksi:</p>
               <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                {parsed.definitions.map((d, i) => (
+                {parsed?.definitions.map((d, i) => (
                   <div key={i} className="text-xs text-zinc-300 bg-zinc-800/50 rounded-lg px-3 py-2">
                     <span className="font-semibold text-amber-400">{d.term}</span>
                     {' → '}
