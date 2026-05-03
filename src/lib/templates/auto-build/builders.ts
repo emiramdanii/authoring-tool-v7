@@ -182,7 +182,7 @@ export function buildSkenarioSlotData(
 
   return {
     _templateId: 'skenario',
-    title: 'Skenario Interaktif',
+    title: skenario.length > 0 && skenario[0].title ? `Skenario: ${skenario[0].title as string}` : 'Skenario Interaktif',
     skenario: chapters,
   };
 }
@@ -308,7 +308,7 @@ export function buildMateriAccordionSlotData(
     const section: Record<string, unknown> = {
       icon: b.icon || '📌',
       title: b.judul || 'Bagian',
-      content: b.isi || '',
+      content: enrichContentHTML(b.isi, b.butir),
     };
 
     // If blok has butir (bullet points), create step-by-step list
@@ -340,10 +340,9 @@ export function buildMateriAccordionSlotData(
     }
     if (secCardGrid.length > 0) section.cardGrid = secCardGrid;
 
-    // FIX: Add titleHighlight from warna/style field
+    // FIX: Add titleHighlight from warna/style field — use judul subjudul if available
     if (b.warna || b.tipe === 'highlight') {
-      // Use isi prefix as highlight if subjudul not available
-      section.titleHighlight = b.isi ? b.isi.slice(0, 40) : '';
+      section.titleHighlight = b.judul ? b.judul : (b.isi ? b.isi.slice(0, 40) : '');
     }
 
     return section;
@@ -399,7 +398,8 @@ export function buildMateriFromModulesSlotData(
     if (type === 'tab-icons') {
       const moduleTabs = (m.tabs as Array<Record<string, unknown>>) || [];
       for (const tab of moduleTabs) {
-        const content = (tab.isi as string) || '';
+        const rawContent = (tab.isi as string) || '';
+        const content = enrichContentHTML(rawContent, (tab.butir as string[]) || undefined);
         tabs.push({
           icon: (tab.icon as string) || '📌',
           label: (tab.judul as string) || (tab.label as string) || '',
@@ -414,10 +414,11 @@ export function buildMateriFromModulesSlotData(
     } else if (type === 'icon-explore') {
       const items = (m.items as Array<Record<string, unknown>>) || [];
       for (const item of items) {
-        // FIX: Build richer content with structured sections instead of flat join
+        // FIX: Build richer content with structured sections using enrichContentHTML
         const parts: string[] = [];
         if (item.ringkasan) parts.push(item.ringkasan as string);
         if (item.isi) parts.push(item.isi as string);
+        const content = enrichContentHTML(parts.join('\n\n'), (item.butir as string[]) || undefined);
 
         // FIX: Build per-section defBoxes from norma-like fields
         const secDefBoxes: DefBoxItem[] = [];
@@ -428,29 +429,51 @@ export function buildMateriFromModulesSlotData(
         tabs.push({
           icon: (item.icon as string) || '🔍',
           label: (item.judul as string) || '',
-          content: parts.join('\n\n'),
+          content,
         });
         sections.push({
           icon: (item.icon as string) || '🔍',
           title: (item.judul as string) || '',
-          content: parts.join('\n\n'),
+          content,
           titleHighlight: (item.sifat as string) || undefined,
           defBoxes: secDefBoxes.length > 0 ? secDefBoxes : undefined,
         });
       }
     } else if (type === 'accordion') {
       const accItems = (m.items as Array<Record<string, unknown>>) || [];
-      for (const item of accItems) {
-        sections.push({
-          icon: (item.icon as string) || '📂',
-          title: (item.judul as string) || '',
-          content: (item.isi as string) || '',
-        });
+      for (const acc of accItems) {
+        const rawContent = (acc.isi as string) || '';
+        const content = enrichContentHTML(rawContent, (acc.butir as string[]) || undefined);
+        const accIcon = (acc.icon as string) || (m.icon as string) || '📂';
+        const accLabel = (acc.judul as string) || (acc.title as string) || (m.title as string) || 'Bagian';
+
         tabs.push({
-          icon: (item.icon as string) || '📂',
-          label: (item.judul as string) || '',
-          content: (item.isi as string) || '',
+          icon: accIcon,
+          label: accLabel,
+          content,
         });
+
+        // Build per-section sub-components for accordion mode
+        const secDefBoxes: DefBoxItem[] = [];
+        if (acc.sumber) secDefBoxes.push({ text: `Sumber: ${acc.sumber as string}`, accentVar: '--y' });
+        if (acc.sifat) secDefBoxes.push({ text: `Sifat: ${acc.sifat as string}`, accentVar: '--c' });
+
+        const accSection: typeof sections[0] = {
+          icon: accIcon,
+          title: accLabel,
+          content,
+          defBoxes: secDefBoxes.length > 0 ? secDefBoxes : undefined,
+        };
+
+        // If accordion item has butir, create step-by-step list
+        if (acc.butir && (acc.butir as string[]).length > 0) {
+          accSection.steps = (acc.butir as string[]).map((point, i) => ({
+            emoji: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'][i] || '📌',
+            text: point,
+          }));
+        }
+
+        sections.push(accSection);
       }
     } else if (type === 'langkah') {
       const steps = (m.steps as Array<Record<string, unknown>>) || [];
@@ -616,7 +639,7 @@ export function buildFlashcardSlotData(
 
   return {
     _templateId: 'flashcard',
-    title: 'Flashcard',
+    title: flashcardMods.length > 0 && flashcardMods[0].title ? `Flashcard: ${flashcardMods[0].title as string}` : 'Flashcard',
     cards,
   };
 }
@@ -833,7 +856,9 @@ export function buildDiskusiTimerSlotData(
     _templateId: 'diskusi-timer',
     title: 'Diskusi Kelompok',
     prompt: 'Diskusikan pertanyaan berikut bersama kelompokmu!',
-    duration: 10,
+    duration: atp.pertemuan.find(p => p.kegiatan.toLowerCase().includes('diskusi'))?.durasi
+      ? parseInt(String(atp.pertemuan.find(p => p.kegiatan.toLowerCase().includes('diskusi'))?.durasi)) || 10
+      : 10,
     questions: questions.length > 0 ? questions : ['Apa yang kamu ketahui tentang topik ini?'],
     diskusiKelompok,
     defBoxes: defBoxes.length > 0 ? defBoxes : undefined,
@@ -850,10 +875,10 @@ export function buildHasilSlotData(meta: MetaState, kuis: KuisItem[]): ScreenSlo
   const totalKuis = kuis.filter((k) => k.q.trim()).length;
   return {
     _templateId: 'hasil',
-    title: 'Hasil Belajar',
+    title: meta.judulPertemuan ? `Hasil: ${meta.judulPertemuan}` : 'Hasil Belajar',
     totalKuis,
     namaBab: meta.namaBab || '',
-    score: -1 as unknown as number, // -1 signals template to use window._kuisResult at runtime
+    score: 0, // Start at 0; template reads window._kuisResult at runtime for actual score
     level: '',
     useKuisResultBridge: true,
   };
@@ -1029,9 +1054,13 @@ export function buildPenutupSlotData(
     title: 'Pembelajaran Selesai!',
     subtitle: meta.judulPertemuan || '',
     icon: '🎓',
-    message: `Selamat! Kamu telah menyelesaikan pembelajaran ${meta.namaBab || 'hari ini'}. Terus semangat belajar!`,
+    message: meta.judulPertemuan
+      ? `Selamat! Kamu telah menyelesaikan "${meta.judulPertemuan}"${meta.namaBab ? ` dalam ${meta.namaBab}` : ''}. Semoga ilmu yang dipelajari bermanfaat dan bisa diterapkan dalam kehidupan sehari-hari!`
+      : `Selamat! Kamu telah menyelesaikan pembelajaran ${meta.namaBab || 'hari ini'}. Terus semangat belajar dan jangan pernah berhenti berkarya!`,
     nextAction: '',
-    quote: 'Belajar bukan hanya soal nilai, tapi soal membangun pemahaman yang bermakna.',
+    quote: meta.mapel
+      ? `"Pendidikan adalah senjata paling ampuh yang bisa kamu gunakan untuk mengubah dunia." — Nelson Mandela`
+      : `"Belajar bukan hanya soal nilai, tapi soal membangun pemahaman yang bermakna."`,
     stats,
     nextPreview,
   };
@@ -1135,8 +1164,17 @@ export function buildPetunjukSlotData(
     body: 'Tuliskan refleksimu di akhir pembelajaran. Jawaban akan jadi portofoliomu hari ini.',
   });
 
+  // Ensure even number of items for 2x2 grid visual balance
+  if (items.length % 2 !== 0) {
+    items.push({
+      icon: '🎯',
+      title: 'Tujuan Pembelajaran',
+      body: 'Perhatikan tujuan pembelajaran di halaman berikutnya — jadikan patokan saat belajar!',
+    });
+  }
+
   // Build dynamic tips based on what exists
-  const tipsParts: string[] = ['Ikuti alur dari awal sampai akhir'];
+  const tipsParts: string[] = [`Ikuti alur "${meta.judulPertemuan || 'pembelajaran'}" dari awal sampai akhir`];
   if (hasDiskusi) tipsParts.push('jawab semua pertanyaan diskusi');
   if (hasGame) tipsParts.push('selesaikan semua game');
   if (hasKuis) tipsParts.push('jawab kuis dengan teliti');
@@ -1226,24 +1264,26 @@ export function buildReviewSlotData(
     }
   }
 
+  // Build diskusi kelompok banner
+  const diskusiKelompok = buildDiskusiKelompokBanner(
+    accentVar,
+    'Review Kelompok · ±5 Menit',
+    'Ingat Bersama!',
+    'Diskusikan pertanyaan review bersama kelompokmu. Balik kartu untuk cek jawabanmu!',
+  );
+
   const diskusiBox = buildDiskusiBox(
-    questions[0]?.q || 'Apa yang kamu ingat dari materi sebelumnya?',
+    questions.length > 0 ? `Review: ${questions[0].q}` : 'Apa yang paling kamu ingat dari pertemuan sebelumnya?',
     accentVar,
     'rv1',
-    'Review Materi',
+    'Review Diskusi',
   );
 
   return {
     _templateId: 'review',
-    title: `Review: ${meta.namaBab || 'Materi Sebelumnya'}`,
-    questions: questions.slice(0, 6),
-    diskusiKelompok: [{
-      tipe: 3 as 3,
-      ikon: '🔄',
-      label: 'Review · ±5 Menit',
-      judul: 'Ingat Kembali Materi Sebelumnya!',
-      isi: 'Ketuk kartu untuk melihat jawaban. Pastikan kamu ingat poin-poin penting sebelum lanjut ke materi baru.',
-    }],
+    title: `Review Pertemuan ${pertemuanKe > 1 ? pertemuanKe - 1 : 1}`,
+    questions,
+    diskusiKelompok,
     cardGrid: cardGrid.length > 0 ? cardGrid : undefined,
     diskusiBox,
   };
