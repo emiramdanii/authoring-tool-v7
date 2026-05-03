@@ -47,4 +47,5 @@ export {
   buildPenutupSlotData,
   buildPetunjukSlotData,
   buildReviewSlotData,
+  resetDiskusiBoxCounter,
 } from './auto-build/index';

@@ -121,6 +121,9 @@ function goScreen(id) {
     navSceneEl.textContent = label;
   }
 
+  // ── Update prev/next button states ──────────────
+  updateNavbarButtons();
+
   // Dispatch custom event for templates to hook into
   var evt = document.createEvent('Event');
   evt.initEvent('screenActivate', true, true);
@@ -137,6 +140,18 @@ function goNextScreen() {
 function goPrevScreen() {
   if (currentScreenIndex > 0) {
     goScreen(SCREENS[currentScreenIndex - 1]);
+  }
+}
+
+// ── NAVBAR PREV/NEXT BUTTON STATE ────────────────────
+function updateNavbarButtons() {
+  var prevBtn = document.getElementById('navPrevBtn');
+  var nextBtn = document.getElementById('navNextBtn');
+  if (prevBtn) {
+    prevBtn.disabled = (currentScreenIndex <= 0);
+  }
+  if (nextBtn) {
+    nextBtn.disabled = (currentScreenIndex >= SCREENS.length - 1);
   }
 }
 
@@ -206,6 +221,9 @@ function switchKtab(id, el) {
       if (navSceneEl) {
         navSceneEl.textContent = allScreens[i].getAttribute('data-nav-label') || '';
       }
+
+      // Set initial prev/next button states
+      updateNavbarButtons();
       break;
     }
   }

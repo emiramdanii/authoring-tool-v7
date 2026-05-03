@@ -64,6 +64,7 @@ export {
   buildPenutupSlotData,
   buildPetunjukSlotData,
   buildReviewSlotData,
+  resetDiskusiBoxCounter,
 } from './builders';
 
 // Import for local use
@@ -103,6 +104,7 @@ import {
   buildPenutupSlotData,
   buildPetunjukSlotData,
   buildReviewSlotData,
+  resetDiskusiBoxCounter,
 } from './builders';
 
 // ═══════════════════════════════════════════════════════════════
@@ -135,6 +137,7 @@ export interface AuthoringData {
 
 export function autoBuildScreens(authoringData: AuthoringData): AssemblyScreen[] {
   resetScreenCounter();
+  resetDiskusiBoxCounter();
   const screens: AssemblyScreen[] = [];
   const { meta, cp, tp, atp, alur, skenario, kuis, modules, games, materi } = authoringData;
   const pertemuanKe = authoringData.pertemuanKe || 1;

@@ -337,6 +337,8 @@ export interface HasilSlotData {
   namaBab: string;
   score: number;
   level: string;
+  /** When true, template reads score from window._kuisResult at runtime */
+  useKuisResultBridge?: boolean;
 }
 
 // ── 13. Refleksi ────────────────────────────────────────────────

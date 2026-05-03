@@ -27,12 +27,36 @@ import {
   type ContentAnalysis,
 } from './helpers';
 
+/**
+ * Enrich plain text content into structured HTML for template display.
+ * - Wraps paragraphs in <p> tags
+ * - Converts butir arrays to <ul><li> lists
+ * - Handles line breaks properly
+ */
+function enrichContentHTML(isi?: string, butir?: string[]): string {
+  if (butir && butir.length > 0) {
+    const items = butir.map(b => `<li>${escHTML(b)}</li>`).join('');
+    return isi ? `<p>${escHTML(isi)}</p><ul>${items}</ul>` : `<ul>${items}</ul>`;
+  }
+  if (!isi) return '';
+  // Split by double newlines for paragraphs, single for line breaks
+  const paragraphs = isi.split(/\n\n+/).filter(p => p.trim());
+  if (paragraphs.length <= 1) return `<p>${escHTML(isi.replace(/\n/g, '<br>'))}</p>`;
+  return paragraphs.map(p => `<p>${escHTML(p.trim().replace(/\n/g, '<br>'))}</p>`).join('');
+}
+
+/** Minimal HTML escape for content text */
+function escHTML(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // ═══════════════════════════════════════════════════════════════
 // COVER
 // ═══════════════════════════════════════════════════════════════
 
 export function buildCoverSlotData(meta: MetaState, accentVar: string, pertemuanKe: number, cp?: CpState): ScreenSlotData {
   const chips: Array<{icon: string; label: string}> = [];
+  if (pertemuanKe) chips.push({ icon: '📖', label: `Pertemuan ${pertemuanKe}` });
   if (meta.kelas) chips.push({ icon: '🏫', label: meta.kelas });
   if (meta.mapel) chips.push({ icon: '📚', label: meta.mapel });
   if (meta.durasi) chips.push({ icon: '⏱️', label: `${meta.durasi} Menit` });
@@ -182,21 +206,26 @@ function buildDiskusiKelompokBanner(
   }];
 }
 
+let _diskusiBoxCounter = 0;
 function buildDiskusiBox(
   prompt: string,
   accentVar: string,
   saveKey = 'd1',
   saveLabel = 'Diskusi Materi',
 ): DiskusiBoxData {
+  _diskusiBoxCounter++;
+  const uniqueId = `diskusiAns${_diskusiBoxCounter}`;
   return {
     prompt,
     placeholder: 'Tuliskan pendapatmu di sini… (jawabanmu akan tampil lagi di Refleksi)',
-    textareaId: 'diskusiAns',
-    saveKey,
+    textareaId: uniqueId,
+    saveKey: `${saveKey}-${_diskusiBoxCounter}`,
     saveLabel,
     accentVar,
   };
 }
+
+export function resetDiskusiBoxCounter() { _diskusiBoxCounter = 0; }
 
 // ═══════════════════════════════════════════════════════════════
 // MATERI-TABICONS
@@ -232,7 +261,7 @@ export function buildMateriTabIconsSlotData(
     return {
       icon: b.icon || '📌',
       label: b.judul || 'Bagian',
-      content: b.isi || b.butir?.join('\n') || '',
+      content: enrichContentHTML(b.isi, b.butir),
       defBoxes: tabDefBoxes.length > 0 ? tabDefBoxes : undefined,
       cardGrid: tabCardGrid.length > 0 ? tabCardGrid : undefined,
     };
@@ -362,7 +391,7 @@ export function buildMateriFromModulesSlotData(
   const relevantModules = getModulesOfType(modules, tabTypes);
 
   const tabs: Array<{icon: string; label: string; content: string}> = [];
-  const sections: Array<{icon: string; title: string; content: string; titleHighlight?: string; steps?: Array<{emoji: string; text: string}>}> = [];
+  const sections: Array<{icon: string; title: string; content: string; titleHighlight?: string; steps?: Array<{emoji: string; text: string}>; defBoxes?: DefBoxItem[]}> = [];
 
   for (const m of relevantModules) {
     const type = m.type as string;
@@ -390,6 +419,12 @@ export function buildMateriFromModulesSlotData(
         if (item.ringkasan) parts.push(item.ringkasan as string);
         if (item.isi) parts.push(item.isi as string);
 
+        // FIX: Build per-section defBoxes from norma-like fields
+        const secDefBoxes: DefBoxItem[] = [];
+        if (item.sumber) secDefBoxes.push({ text: `Sumber: ${item.sumber as string}`, accentVar: '--y' });
+        if (item.sifat) secDefBoxes.push({ text: `Sifat: ${item.sifat as string}`, accentVar: '--c' });
+        if (item.tujuan) secDefBoxes.push({ text: `Tujuan: ${item.tujuan as string}`, accentVar: '--g' });
+
         tabs.push({
           icon: (item.icon as string) || '🔍',
           label: (item.judul as string) || '',
@@ -400,6 +435,7 @@ export function buildMateriFromModulesSlotData(
           title: (item.judul as string) || '',
           content: parts.join('\n\n'),
           titleHighlight: (item.sifat as string) || undefined,
+          defBoxes: secDefBoxes.length > 0 ? secDefBoxes : undefined,
         });
       }
     } else if (type === 'accordion') {
@@ -789,7 +825,7 @@ export function buildDiskusiTimerSlotData(
   const diskusiBox = buildDiskusiBox(
     questions[0] || 'Apa yang kamu ketahui tentang topik ini?',
     accentVar,
-    'd1',
+    'dt1',
     'Diskusi Kelompok',
   );
 
@@ -817,8 +853,9 @@ export function buildHasilSlotData(meta: MetaState, kuis: KuisItem[]): ScreenSlo
     title: 'Hasil Belajar',
     totalKuis,
     namaBab: meta.namaBab || '',
-    score: 0,
+    score: -1 as unknown as number, // -1 signals template to use window._kuisResult at runtime
     level: '',
+    useKuisResultBridge: true,
   };
 }
 
@@ -1189,6 +1226,13 @@ export function buildReviewSlotData(
     }
   }
 
+  const diskusiBox = buildDiskusiBox(
+    questions[0]?.q || 'Apa yang kamu ingat dari materi sebelumnya?',
+    accentVar,
+    'rv1',
+    'Review Materi',
+  );
+
   return {
     _templateId: 'review',
     title: `Review: ${meta.namaBab || 'Materi Sebelumnya'}`,
@@ -1201,5 +1245,6 @@ export function buildReviewSlotData(
       isi: 'Ketuk kartu untuk melihat jawaban. Pastikan kamu ingat poin-poin penting sebelum lanjut ke materi baru.',
     }],
     cardGrid: cardGrid.length > 0 ? cardGrid : undefined,
+    diskusiBox,
   };
 }

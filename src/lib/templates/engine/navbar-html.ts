@@ -199,6 +199,13 @@ export function renderNavbarCSS(): string {
 .nav-prog-fill{background:linear-gradient(90deg,var(--y),var(--c));}
 .nav-score{color:var(--y);}
 .nav-prev,.nav-next{font-size:.78rem;}
+/* ═══ SHARED NAVBAR PREV/NEXT BUTTONS ═══ */
+.nav-prev-btn,.nav-next-btn{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;border:none;cursor:pointer;transition:all .18s;flex-shrink:0;}
+.nav-prev-btn{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);}
+.nav-prev-btn:hover{background:rgba(255,255,255,.15);border-color:var(--y);color:var(--y);}
+.nav-next-btn{background:var(--c);color:#0e1c2f;}
+.nav-next-btn:hover{background:var(--y);transform:translateY(-1px);}
+.nav-prev-btn:disabled,.nav-next-btn:disabled{opacity:.3;cursor:default;pointer-events:none;}
 
 /* ═══ MINIMAL ═══ */
 .navbar--minimal{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 14px;}
@@ -241,7 +248,9 @@ export function renderNavbarCSS(): string {
 export function renderSharedNavbarHTML(logoText: string = '📚 MPI'): string {
   return `<nav class="navbar" id="navbar" style="display:none">
   <span class="nav-logo" id="navLogo">${esc(logoText)}</span>
+  <button class="nav-prev-btn" id="navPrevBtn" onclick="goPrevScreen()" aria-label="Layar sebelumnya">←</button>
   <div class="nav-prog"><div class="nav-prog-fill" id="progFill" style="width:0%"></div></div>
+  <button class="nav-next-btn" id="navNextBtn" onclick="goNextScreen()" aria-label="Layar berikutnya">→</button>
   <span class="nav-scene" id="navScene"></span>
   <span class="nav-score">🌟 <span id="navScore">0</span></span>
 </nav>`;
