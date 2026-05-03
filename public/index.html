@@ -843,10 +843,27 @@
 <!-- ═══ SCRIPTS — satu blok, urutan benar, tidak duplikat ═══ -->
 <script src="data.js"></script>
 <script src="editor.js"></script>
+<!-- Module types registry -->
 <script src="module-types.js"></script>
+<!-- Module controller (slim) — needs AT_MODULES defined before editor/render attach methods -->
 <script src="modules.js"></script>
+<!-- Module editor form builders — attaches methods to AT_MODULES -->
+<script src="module-editor.js"></script>
+<!-- Module renderers — split for efficiency -->
+<script src="render-basic.js"></script>
+<script src="render-interactive.js"></script>
+<script src="render-data.js"></script>
+<script src="render-advanced.js"></script>
+<!-- Module render aggregator (dispatcher) — must load after render-* files -->
 <script src="modules-render.js"></script>
+<!-- Game types registry -->
+<script src="game-types.js"></script>
+<!-- Game controller (slim) — needs AT_GAMES defined before editor/render attach methods -->
 <script src="games.js"></script>
+<!-- Game editor form builders — attaches methods to AT_GAMES -->
+<script src="game-editor.js"></script>
+<!-- Game HTML renderers — attaches methods to AT_GAMES -->
+<script src="game-render.js"></script>
 <script src="autogen.js"></script>
 <script src="importer.js"></script>
 <script src="exporter.js"></script>
@@ -854,6 +871,8 @@
 <script src="animations.js"></script>
 <script src="extras.js"></script>
 <script src="liveview-editors.js"></script>
+<script src="liveview-core.js"></script>
+<script src="liveview-pages.js"></script>
 <script src="liveview.js"></script>
 <script src="liveview_enhancements.js"></script>
 <script src="canva.js"></script>
